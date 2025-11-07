@@ -1,22 +1,24 @@
-import { useState } from "react";
-import { Globe, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+'use client';
+
+import { useState } from 'react';
+import { Globe, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataLoader } from "@/lib/dataLoader";
-import { analyzeEconomicCrisis, analyzeFoodCrisis, type CrisisResult } from "@/lib/crisisAnalysis";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DataLoader } from '@/lib/dataLoader';
+import { useToast } from '@/hooks/use-toast';
+import { analyzeEconomicCrisis, analyzeFoodCrisis, type CrisisResult } from '@/lib/crisisAnalysis';
 
 const CrisisAnalyzer = () => {
-  const [crisisType, setCrisisType] = useState<"economic" | "food">("economic");
-  const [forecastYear, setForecastYear] = useState("2025");
+  const [crisisType, setCrisisType] = useState<'economic' | 'food'>('economic');
+  const [forecastYear, setForecastYear] = useState('2025');
   const [results, setResults] = useState<CrisisResult[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -27,50 +29,60 @@ const CrisisAnalyzer = () => {
       const countries = await DataLoader.getCountries();
       const crisisResults: CrisisResult[] = [];
 
+      // Process countries sequentially or in batches
       for (const country of countries) {
         const countryData = await DataLoader.getCountryData(country);
         if (!countryData) continue;
 
         let result: CrisisResult;
 
-        if (crisisType === "economic") {
-          result = analyzeEconomicCrisis(country, {
-            gdpGrowth: countryData.latestData.gdpGrowth || 0,
-            inflation: countryData.latestData.inflation || 0,
-            unemployment: countryData.latestData.unemployment || 0,
-            domesticCredit: countryData.latestData.domesticCredit || 0,
-            exports: countryData.latestData.exports || 0,
-            imports: countryData.latestData.imports || 0,
-          });
-        } else {
-          result = analyzeFoodCrisis(country, {
-            cerealYield: countryData.latestData.cerealYield || 0,
-            foodImports: countryData.latestData.foodImports || 0,
-            foodProductionIndex: countryData.latestData.foodProductionIndex || 0,
-            gdpGrowth: countryData.latestData.gdpGrowth || 0,
-            gdpPerCapita: countryData.latestData.gdpPerCapita || 0,
-            inflation: countryData.latestData.inflation || 0,
-            populationGrowth: countryData.latestData.populationGrowth || 0,
-          });
-        }
+        try {
+          if (crisisType === 'economic') {
+            // ✅ Calls Python model through backend API
+            result = await analyzeEconomicCrisis(country, {
+              gdpGrowth: countryData.latestData.gdpGrowth || 0,
+              inflation: countryData.latestData.inflation || 0,
+              unemployment: countryData.latestData.unemployment || 0,
+              domesticCredit: countryData.latestData.domesticCredit || 0,
+              exports: countryData.latestData.exports || 0,
+              imports: countryData.latestData.imports || 0,
+            });
+          } else {
+            // ✅ Calls Python model through backend API
+            result = await analyzeFoodCrisis(country, {
+              cerealYield: countryData.latestData.cerealYield || 0,
+              foodImports: countryData.latestData.foodImports || 0,
+              foodProductionIndex: countryData.latestData.foodProductionIndex || 0,
+              gdpGrowth: countryData.latestData.gdpGrowth || 0,
+              gdpPerCapita: countryData.latestData.gdpPerCapita || 0,
+              inflation: countryData.latestData.inflation || 0,
+              populationGrowth: countryData.latestData.populationGrowth || 0,
+            });
+          }
 
-        if (result.probability > 50) {
-          crisisResults.push(result);
+          if (result.probability > 50) {
+            crisisResults.push(result);
+          }
+        } catch (error) {
+          console.error(`Error analyzing ${country}:`, error);
+          // Continue with next country on error
         }
       }
 
-      setResults(crisisResults.sort((a, b) => b.probability - a.probability));
-      
+      setResults(
+        crisisResults.sort((a, b) => b.probability - a.probability)
+      );
+
       toast({
-        title: "Analysis Complete",
+        title: 'Analysis Complete',
         description: `Found ${crisisResults.length} countries at high risk`,
       });
     } catch (error) {
-      console.error("Analysis error:", error);
+      console.error('Analysis error:', error);
       toast({
-        title: "Analysis Failed",
-        description: "Unable to complete crisis analysis",
-        variant: "destructive",
+        title: 'Analysis Failed',
+        description: 'Unable to complete crisis analysis',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -100,7 +112,10 @@ const CrisisAnalyzer = () => {
 
           {/* Controls */}
           <div className="flex flex-col items-center gap-4">
-            <Tabs value={crisisType} onValueChange={(v) => setCrisisType(v as "economic" | "food")}>
+            <Tabs
+              value={crisisType}
+              onValueChange={(v) => setCrisisType(v as 'economic' | 'food')}
+            >
               <TabsList>
                 <TabsTrigger value="economic">Economic Crisis</TabsTrigger>
                 <TabsTrigger value="food">Food Crisis</TabsTrigger>
@@ -118,8 +133,13 @@ const CrisisAnalyzer = () => {
               </SelectContent>
             </Select>
 
-            <Button onClick={runAnalysis} disabled={loading} size="lg" className="px-8">
-              {loading ? "Analyzing..." : "Run Crisis Prediction Analysis"}
+            <Button
+              onClick={runAnalysis}
+              disabled={loading}
+              size="lg"
+              className="px-8"
+            >
+              {loading ? 'Analyzing...' : 'Run Crisis Prediction Analysis'}
             </Button>
           </div>
         </section>
@@ -137,8 +157,8 @@ const CrisisAnalyzer = () => {
                       High-Risk Alert for {forecastYear}
                     </h2>
                     <p className="text-muted-foreground mb-4">
-                      The following countries show a significant crisis probability (&gt;50%) and require
-                      close monitoring.
+                      The following countries show a significant crisis probability (
+                      &gt;50%) and require close monitoring.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {highRiskCountries.slice(0, 10).map((result) => (
@@ -158,7 +178,8 @@ const CrisisAnalyzer = () => {
             {/* Detailed Results */}
             <div>
               <h2 className="text-2xl font-bold mb-4">
-                Prediction of {crisisType === "economic" ? "Economic" : "Food"} Crisis for{" "}
+                Prediction of{' '}
+                {crisisType === 'economic' ? 'Economic' : 'Food'} Crisis for{' '}
                 {forecastYear}
               </h2>
               <p className="text-muted-foreground mb-6">
@@ -175,24 +196,34 @@ const CrisisAnalyzer = () => {
                       </div>
 
                       <div className="text-center mb-6">
-                        <p className="text-sm text-muted-foreground mb-2">Crisis Probability</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Crisis Probability
+                        </p>
                         <p className="text-5xl font-bold text-destructive">
                           {result.probability.toFixed(2)}%
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold mb-3">Top 3 Contributing Indicators</p>
+                        <p className="text-sm font-semibold mb-3">
+                          Top 3 Contributing Indicators
+                        </p>
                         <div className="space-y-3">
                           {result.topIndicators.map((indicator, idx) => (
                             <div key={idx} className="space-y-1">
                               <div className="flex justify-between text-sm">
-                                <span className="font-medium">{indicator.name}</span>
-                                <span className="text-destructive">+{indicator.impact.toFixed(3)}</span>
+                                <span className="font-medium">
+                                  {idx + 1}. {indicator.name}
+                                </span>
+                                <span className="text-destructive">
+                                  +{indicator.impact.toFixed(3)}
+                                </span>
                               </div>
                               <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Value:</span>
-                                <span className="text-foreground">{indicator.value.toFixed(2)}</span>
+                                <span className="text-foreground">
+                                  {indicator.value.toFixed(2)}
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -212,7 +243,8 @@ const CrisisAnalyzer = () => {
             <CardContent className="text-center">
               <Globe className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground">
-                Click "Run Crisis Prediction Analysis" to analyze global risk indicators
+                Click "Run Crisis Prediction Analysis" to analyze global risk
+                indicators
               </p>
             </CardContent>
           </Card>
