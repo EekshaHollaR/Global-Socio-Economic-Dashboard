@@ -40,7 +40,6 @@ CORS(app, resources={
 # =====================================================================
 # JSON Encoder Fix - Handle NumPy types
 # =====================================================================
-
 class NumpyJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles NumPy types"""
     def default(self, obj):
@@ -59,7 +58,6 @@ app.json_encoder = NumpyJSONEncoder
 # =====================================================================
 # Helper function to convert result to JSON-serializable
 # =====================================================================
-
 def to_json_serializable(result):
     """Convert all NumPy types to Python native types"""
     if isinstance(result, dict):
@@ -80,7 +78,6 @@ def to_json_serializable(result):
 # =====================================================================
 # Health Check
 # =====================================================================
-
 @app.route('/health', methods=['GET'])
 def health_check():
     """Check if API and models are running"""
@@ -90,7 +87,6 @@ def health_check():
         'models': 'loaded',
         'cors_enabled': True
     }), 200
-
 
 @app.route('/api/analyze/economic', methods=['POST', 'OPTIONS'])
 def analyze_economic():
@@ -105,26 +101,33 @@ def analyze_economic():
         "unemployment": 15.06,
         "domesticCredit": 32.5,
         "exports": 3.40,
-        "imports": 45.0
+        "imports": 45.0,
+        "gdpGrowthLag": -2.15,      // (Optional) Previous year value
+        "inflationLag": 25.50        // (Optional) Previous year value
     }
     """
     if request.method == 'OPTIONS':
         return '', 204
-    
+
     try:
         data = request.get_json()
-        
+
         # Required fields
-        required_fields = ['country', 'gdpGrowth', 'inflation', 'unemployment', 
+        required_fields = ['country', 'gdpGrowth', 'inflation', 'unemployment',
                           'domesticCredit', 'exports', 'imports']
+
         if not all(field in data for field in required_fields):
             return jsonify({
                 'error': 'Missing required fields',
                 'required': required_fields
             }), 400
-        
+
         print(f"\n📊 Analyzing {data['country']} (Economic Crisis)")
-        
+        print(f"   GDP Growth: {data['gdpGrowth']}")
+        print(f"   GDP Growth Lag: {data.get('gdpGrowthLag', 'NOT PROVIDED - will use current')}")
+        print(f"   Inflation: {data['inflation']}")
+        print(f"   Inflation Lag: {data.get('inflationLag', 'NOT PROVIDED - will use current')}")
+
         # Call analysis function
         result = analyze_economic_crisis(
             country=data['country'],
@@ -137,19 +140,21 @@ def analyze_economic():
             gdp_growth_lag=float(data.get('gdpGrowthLag', data['gdpGrowth'])),
             inflation_lag=float(data.get('inflationLag', data['inflation'])),
         )
-        
+
         # Convert to JSON-serializable format
         result = to_json_serializable(result)
-        
+
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
+
         return jsonify(result), 200
-        
+
     except ValueError as e:
         print(f"❌ ValueError: {str(e)}")
         return jsonify({
             'error': 'Invalid input values',
             'message': str(e)
         }), 400
+
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         import traceback
@@ -160,9 +165,8 @@ def analyze_economic():
         }), 500
 
 # =====================================================================
-# Food Crisis Endpoint
+# Food Crisis Endpoint - FIXED VERSION
 # =====================================================================
-
 @app.route('/api/analyze/food', methods=['POST', 'OPTIONS'])
 def analyze_food():
     """
@@ -177,26 +181,38 @@ def analyze_food():
         "gdpGrowth": -3.89,
         "gdpPerCapita": 633.89,
         "inflation": 13.42,
-        "populationGrowth": 2.98
+        "populationGrowth": 2.98,
+        "cerealYieldLag": 795.5,              // (Optional) Previous year
+        "foodImportsLag": 17.85,              // (Optional) Previous year
+        "foodProductionLag": 88.45,           // (NEW - CRITICAL) Previous year
+        "gdpGrowthLag": -2.15                 // (NEW - IMPORTANT) Previous year
     }
     """
     if request.method == 'OPTIONS':
         return '', 204
-    
+
     try:
         data = request.get_json()
-        
+
         # Required fields
         required_fields = ['country', 'cerealYield', 'foodImports', 'foodProductionIndex',
                           'gdpGrowth', 'gdpPerCapita', 'inflation', 'populationGrowth']
+
         if not all(field in data for field in required_fields):
             return jsonify({
                 'error': 'Missing required fields',
                 'required': required_fields
             }), 400
-        
-        print(f"\n🍽️  Analyzing {data['country']} (Food Crisis)")
-        
+
+        print(f"\n🍽️ Analyzing {data['country']} (Food Crisis)")
+        print(f"   Cereal Yield: {data['cerealYield']}")
+        print(f"   Cereal Yield Lag: {data.get('cerealYieldLag', 'NOT PROVIDED - will use current')}")
+        print(f"   Food Production Index: {data['foodProductionIndex']}")
+        print(f"   Food Production Lag: {data.get('foodProductionLag', '❌ MISSING - CRITICAL!')}")
+        print(f"   Food Imports: {data['foodImports']}")
+        print(f"   Food Imports Lag: {data.get('foodImportsLag', 'NOT PROVIDED - will use current')}")
+        print(f"   GDP Growth Lag: {data.get('gdpGrowthLag', 'NOT PROVIDED - will use current')}")
+
         # Call analysis function
         result = analyze_food_crisis(
             country=data['country'],
@@ -209,20 +225,24 @@ def analyze_food():
             population_growth=float(data['populationGrowth']),
             cereal_yield_lag=float(data.get('cerealYieldLag', data['cerealYield'])),
             food_imports_lag=float(data.get('foodImportsLag', data['foodImports'])),
+            food_production_lag=float(data.get('foodProductionLag', data['foodProductionIndex'])),  # ← FIXED
+            gdp_growth_lag=float(data.get('gdpGrowthLag', data['gdpGrowth'])),  # ← FIXED
         )
-        
+
         # Convert to JSON-serializable format
         result = to_json_serializable(result)
-        
+
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
+
         return jsonify(result), 200
-        
+
     except ValueError as e:
         print(f"❌ ValueError: {str(e)}")
         return jsonify({
             'error': 'Invalid input values',
             'message': str(e)
         }), 400
+
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         import traceback
@@ -235,7 +255,6 @@ def analyze_food():
 # =====================================================================
 # Error Handlers
 # =====================================================================
-
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Endpoint not found'}), 404
@@ -247,22 +266,21 @@ def internal_error(error):
 # =====================================================================
 # Main
 # =====================================================================
-
 if __name__ == '__main__':
     print("""
-    ╔═══════════════════════════════════════════════════╗
-    ║   Crisis Analysis API (PRODUCTION READY)         ║
-    ║   Running on http://localhost:3001              ║
-    ╚═══════════════════════════════════════════════════╝
-    
-    Endpoints:
-    POST /api/analyze/economic
-    POST /api/analyze/food
-    GET  /health
-    
-    Status: ✅ NumPy JSON serialization fixed
-    """)
-    
+╔═══════════════════════════════════════════════════╗
+║ Crisis Analysis API (FIXED VERSION) ║
+║ Running on http://localhost:3001 ║
+╚═══════════════════════════════════════════════════╝
+
+Endpoints:
+  POST /api/analyze/economic
+  POST /api/analyze/food
+  GET /health
+
+Status: ✅ Lag features now properly handled
+Note: Food endpoint now extracts foodProductionLag and gdpGrowthLag
+""")
     app.run(
         host='0.0.0.0',
         port=3001,
