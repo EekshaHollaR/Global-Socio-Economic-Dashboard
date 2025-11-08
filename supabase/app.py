@@ -91,9 +91,6 @@ def health_check():
         'cors_enabled': True
     }), 200
 
-# =====================================================================
-# Economic Crisis Endpoint
-# =====================================================================
 
 @app.route('/api/analyze/economic', methods=['POST', 'OPTIONS'])
 def analyze_economic():
