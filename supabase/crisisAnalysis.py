@@ -1,4 +1,4 @@
-import joblib
+import pickle
 import numpy as np
 import pandas as pd
 import shap
@@ -17,51 +17,67 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # =====================================================================
-# Load models with verification
+# Load NEW Pickle-Based Models
 # =====================================================================
-economic_model = None
-food_model = None
+economic_model_data = None
+food_model_data = None
 
-model_paths = [
-    'models/economic_crisis_model.pkl',
-    './models/economic_crisis_model.pkl',
-    'backend/models/economic_crisis_model.pkl',
+# Try to load ECONOMIC model
+economic_paths = [
+    'models/economic_model.pkl',
+    './models/economic_model.pkl',
+    'backend/models/economic_model.pkl',
 ]
 
-for path in model_paths:
+for path in economic_paths:
     if os.path.exists(path):
         try:
-            economic_model = joblib.load(path)
+            with open(path, 'rb') as f:
+                economic_model_data = pickle.load(f)
+            
             logger.info(f"✅ Economic model loaded from: {path}")
-            # VERIFY MODEL
-            logger.info(f"   Model type: {type(economic_model)}")
-            if hasattr(economic_model, 'n_features_in_'):
-                logger.info(f"   Model expects {economic_model.n_features_in_} features")
+            
+            # Verify structure
+            if isinstance(economic_model_data, dict):
+                logger.info(f"   Model type: {type(economic_model_data.get('model'))}")
+                logger.info(f"   Feature count: {len(economic_model_data.get('feature_order', []))}")
+                logger.info(f"   Features: {economic_model_data.get('feature_order')}")
+            else:
+                logger.warning(f"   ⚠️ Model is not a dict, might be old format")
+            
             break
         except Exception as e:
             logger.warning(f"⚠️ Failed to load from {path}: {e}")
 
+# Try to load FOOD model
 food_paths = [
-    'models/food_crisis_model.pkl',
-    './models/food_crisis_model.pkl',
-    'backend/models/food_crisis_model.pkl',
+    'models/food_model.pkl',
+    './models/food_model.pkl',
+    'backend/models/food_model.pkl',
 ]
 
 for path in food_paths:
     if os.path.exists(path):
         try:
-            food_model = joblib.load(path)
+            with open(path, 'rb') as f:
+                food_model_data = pickle.load(f)
+            
             logger.info(f"✅ Food model loaded from: {path}")
-            # VERIFY MODEL
-            logger.info(f"   Model type: {type(food_model)}")
-            if hasattr(food_model, 'n_features_in_'):
-                logger.info(f"   Model expects {food_model.n_features_in_} features")
+            
+            # Verify structure
+            if isinstance(food_model_data, dict):
+                logger.info(f"   Model type: {type(food_model_data.get('model'))}")
+                logger.info(f"   Feature count: {len(food_model_data.get('feature_order', []))}")
+                logger.info(f"   Features: {food_model_data.get('feature_order')}")
+            else:
+                logger.warning(f"   ⚠️ Model is not a dict, might be old format")
+            
             break
         except Exception as e:
             logger.warning(f"⚠️ Failed to load from {path}: {e}")
 
 # =====================================================================
-# EXACT ECONOMIC CRISIS - MATCHING NOTEBOOK EXACTLY
+# ECONOMIC CRISIS ANALYSIS - NEW VERSION (NO LAGS)
 # =====================================================================
 
 def analyze_economic_crisis(
@@ -72,15 +88,24 @@ def analyze_economic_crisis(
     domestic_credit: float,
     exports: float,
     imports: float,
-    gdp_growth_lag: float = None,
-    inflation_lag: float = None,
+    gdp_per_capita: float = 0.0,  # NEW - required by new model
+    gross_fixed_capital: float = 0.0,  # NEW - required by new model
 ) -> Dict:
     """
-    EXACT matching your notebook model1.ipynb
-    Uses 8 features in THIS EXACT ORDER
+    Economic crisis analysis using NEW pickle-based model
+    
+    NEW MODEL FEATURES (8 total, NO lags):
+    1. Domestic credit to private sector (% of GDP)
+    2. Exports of goods and services (% of GDP)
+    3. GDP growth (annual %)
+    4. GDP per capita (current US$)
+    5. Gross fixed capital formation (% of GDP)
+    6. Imports of goods and services (% of GDP)
+    7. Inflation, consumer prices (annual %)
+    8. Unemployment, total (% of total labor force)
     """
     
-    if economic_model is None:
+    if economic_model_data is None:
         logger.error("Economic model not loaded!")
         return {
             'country': country,
@@ -90,62 +115,70 @@ def analyze_economic_crisis(
         }
 
     try:
-        # ===== DEBUG INPUT VALUES =====
-        logger.debug(f"Economic Input for {country}:")
-        logger.debug(f"  gdp_growth: {gdp_growth}")
-        logger.debug(f"  inflation: {inflation}")
-        logger.debug(f"  unemployment: {unemployment}")
-        logger.debug(f"  domestic_credit: {domestic_credit}")
-        logger.debug(f"  exports: {exports}")
-        logger.debug(f"  imports: {imports}")
-        logger.debug(f"  gdp_growth_lag: {gdp_growth_lag}")
-        logger.debug(f"  inflation_lag: {inflation_lag}")
+        # Extract model and feature order
+        model = economic_model_data.get('model')
+        feature_order = economic_model_data.get('feature_order', [])
+        
+        if model is None or not feature_order:
+            logger.error("Model or feature_order missing from pickle!")
+            return {
+                'country': country,
+                'probability': 0,
+                'classification': 'Error: Invalid model structure',
+                'topIndicators': [],
+            }
 
-        # Use lagged values if provided, otherwise use current
-        lag1_gdp = gdp_growth_lag if gdp_growth_lag is not None else gdp_growth
-        lag1_inf = inflation_lag if inflation_lag is not None else inflation
+        logger.debug(f"Economic Analysis for {country}:")
+        logger.debug(f"  GDP Growth: {gdp_growth}")
+        logger.debug(f"  Inflation: {inflation}")
+        logger.debug(f"  Unemployment: {unemployment}")
+        logger.debug(f"  Domestic Credit: {domestic_credit}")
+        logger.debug(f"  Exports: {exports}")
+        logger.debug(f"  Imports: {imports}")
+        logger.debug(f"  GDP per Capita: {gdp_per_capita}")
+        logger.debug(f"  Gross Fixed Capital: {gross_fixed_capital}")
 
-        logger.debug(f"  Using lag1_gdp: {lag1_gdp} (lag provided: {gdp_growth_lag is not None})")
-        logger.debug(f"  Using lag1_inf: {lag1_inf} (lag provided: {inflation_lag is not None})")
+        # Create feature dictionary matching training data
+        features_dict = {
+            'Domestic credit to private sector (% of GDP)': domestic_credit,
+            'Exports of goods and services (% of GDP)': exports,
+            'GDP growth (annual %)': gdp_growth,
+            'GDP per capita (current US$)': gdp_per_capita,
+            'Gross fixed capital formation (% of GDP)': gross_fixed_capital,
+            'Imports of goods and services (% of GDP)': imports,
+            'Inflation, consumer prices (annual %)': inflation,
+            'Unemployment, total (% of total labor force) (modeled ILO estimate)': unemployment,
+        }
 
-        # EXACT Feature vector order from notebook
-        # [GDP growth, Inflation, Unemployment, Credit, Exports, Imports, GDP lag, Inflation lag]
-        feature_vector = np.array([
-            gdp_growth,
-            inflation,
-            unemployment,
-            domestic_credit,
-            exports,
-            imports,
-            lag1_gdp,
-            lag1_inf,
-        ]).reshape(1, -1)
+        # Build feature vector in EXACT order from training
+        feature_vector = np.array([features_dict[feat] for feat in feature_order]).reshape(1, -1)
 
         logger.debug(f"Feature vector shape: {feature_vector.shape}")
         logger.debug(f"Feature vector: {feature_vector}")
 
-        # Check if feature count matches model expectation
-        if hasattr(economic_model, 'n_features_in_'):
-            expected_features = economic_model.n_features_in_
-            actual_features = feature_vector.shape[1]
-            if expected_features != actual_features:
-                logger.error(f"❌ FEATURE MISMATCH! Expected {expected_features}, got {actual_features}")
-                logger.error(f"   This is why probability differs from notebook!")
+        # Verify feature count
+        if hasattr(model, 'n_features_in_'):
+            expected = model.n_features_in_
+            actual = feature_vector.shape[1]
+            if expected != actual:
+                logger.error(f"❌ FEATURE MISMATCH! Expected {expected}, got {actual}")
+                return {
+                    'country': country,
+                    'probability': 0,
+                    'classification': 'Error: Feature count mismatch',
+                    'topIndicators': [],
+                }
 
-        # EXACT predict_proba from notebook
-        if hasattr(economic_model, 'predict_proba'):
-            probability_raw = economic_model.predict_proba(feature_vector)[0][1]
-            logger.debug(f"Raw probability from model: {probability_raw}")
+        # Predict probability
+        if hasattr(model, 'predict_proba'):
+            probability_raw = model.predict_proba(feature_vector)[0][1]
         else:
-            probability_raw = economic_model.predict(feature_vector)[0]
-            logger.debug(f"Raw prediction from model: {probability_raw}")
+            probability_raw = model.predict(feature_vector)[0]
 
-        # Convert to PERCENTAGE (NOTEBOOK DOES THIS)
-        # CHECK: Is this multiplication causing the difference?
         probability = probability_raw * 100
         logger.info(f"Final probability: {probability:.2f}% (raw: {probability_raw:.4f})")
 
-        # Classification (matching your notebook thresholds)
+        # Classification
         if probability >= 80:
             classification = 'High Risk'
         elif probability >= 50:
@@ -153,45 +186,24 @@ def analyze_economic_crisis(
         else:
             classification = 'Low Risk'
 
-        logger.info(f"Classification: {classification}")
-
-        # SHAP - EXACT like your notebook
+        # SHAP values for top indicators
         try:
-            explainer = shap.TreeExplainer(economic_model)
-            shapvalues = explainer.shap_values(feature_vector)
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(feature_vector)
 
-            # Select positive class
-            if isinstance(shapvalues, list) and len(shapvalues) > 1:
-                shapvaluespositive = shapvalues[1]
+            if isinstance(shap_values, list) and len(shap_values) > 1:
+                shap_positive = shap_values[1]
             else:
-                shapvaluespositive = shapvalues
+                shap_positive = shap_values
 
-            # Flatten if 3D
-            if hasattr(shapvaluespositive, 'ndim') and shapvaluespositive.ndim == 3:
-                shapvaluespositive = shapvaluespositive[:, :, 1]
+            if hasattr(shap_positive, 'ndim') and shap_positive.ndim == 3:
+                shap_positive = shap_positive[:, :, 1]
 
-            # Get instance SHAP
-            instanceshap = shapvaluespositive[0]
+            instance_shap = shap_positive[0]
 
-            # Feature names
-            featnames = [
-                'GDP growth annual %',
-                'Inflation, consumer prices annual %',
-                'Unemployment, total % of labor force',
-                'Domestic credit to private sector %',
-                'Exports of goods and services %',
-                'Imports of goods and services %',
-                'GDP growth lag1',
-                'Inflation lag1'
-            ]
-
-            # Pair features with SHAP values and actual values
-            featurecontribs = sorted(
-                zip(
-                    featnames,
-                    instanceshap,
-                    [gdp_growth, inflation, unemployment, domestic_credit, exports, imports, lag1_gdp, lag1_inf]
-                ),
+            # Pair with actual values
+            feature_contribs = sorted(
+                zip(feature_order, instance_shap, feature_vector[0]),
                 key=lambda x: abs(x[1]),
                 reverse=True
             )[:3]
@@ -202,7 +214,7 @@ def analyze_economic_crisis(
                     'impact': float(contrib),
                     'value': float(val)
                 }
-                for name, contrib, val in featurecontribs
+                for name, contrib, val in feature_contribs
             ]
 
         except Exception as shap_error:
@@ -232,7 +244,7 @@ def analyze_economic_crisis(
         }
 
 # =====================================================================
-# EXACT FOOD CRISIS - MATCHING NOTEBOOK EXACTLY
+# FOOD CRISIS ANALYSIS - NEW VERSION (NO LAGS)
 # =====================================================================
 
 def analyze_food_crisis(
@@ -244,17 +256,23 @@ def analyze_food_crisis(
     gdp_per_capita: float,
     inflation: float,
     population_growth: float,
-    cereal_yield_lag: float = None,
-    food_imports_lag: float = None,
-    food_production_lag: float = None,
-    gdp_growth_lag: float = None,
+    gdp_current: float = 0.0,  # NEW - required by new model
 ) -> Dict:
     """
-    EXACT matching your notebook model2.ipynb
-    Uses 8 features in THIS EXACT ORDER
+    Food crisis analysis using NEW pickle-based model
+    
+    NEW MODEL FEATURES (8 total, NO lags):
+    1. Cereal yield (kg per hectare)
+    2. Food imports (% of merchandise imports)
+    3. Food production index (2014-2016 = 100)
+    4. GDP (current US$)  ← NEW!
+    5. GDP growth (annual %)
+    6. GDP per capita (current US$)
+    7. Inflation, consumer prices (annual %)
+    8. Population growth (annual %)
     """
     
-    if food_model is None:
+    if food_model_data is None:
         logger.error("Food model not loaded!")
         return {
             'country': country,
@@ -264,68 +282,70 @@ def analyze_food_crisis(
         }
 
     try:
-        # ===== DEBUG INPUT VALUES =====
-        logger.debug(f"Food Input for {country}:")
-        logger.debug(f"  cereal_yield: {cereal_yield}")
-        logger.debug(f"  food_imports: {food_imports}")
-        logger.debug(f"  food_production_index: {food_production_index}")
-        logger.debug(f"  gdp_growth: {gdp_growth}")
-        logger.debug(f"  gdp_per_capita: {gdp_per_capita}")
-        logger.debug(f"  inflation: {inflation}")
-        logger.debug(f"  population_growth: {population_growth}")
-        logger.debug(f"  cereal_yield_lag: {cereal_yield_lag}")
-        logger.debug(f"  food_imports_lag: {food_imports_lag}")
-        logger.debug(f"  food_production_lag: {food_production_lag}")
-        logger.debug(f"  gdp_growth_lag: {gdp_growth_lag}")
+        # Extract model and feature order
+        model = food_model_data.get('model')
+        feature_order = food_model_data.get('feature_order', [])
+        
+        if model is None or not feature_order:
+            logger.error("Model or feature_order missing from pickle!")
+            return {
+                'country': country,
+                'probability': 0,
+                'classification': 'Error: Invalid model structure',
+                'topIndicators': [],
+            }
 
-        # Use lagged values if provided, otherwise use current
-        lag_cereal = cereal_yield_lag if cereal_yield_lag is not None else cereal_yield
-        lag_imports = food_imports_lag if food_imports_lag is not None else food_imports
-        lag_prod = food_production_lag if food_production_lag is not None else food_production_index
-        lag_gdp = gdp_growth_lag if gdp_growth_lag is not None else gdp_growth
+        logger.debug(f"Food Analysis for {country}:")
+        logger.debug(f"  Cereal Yield: {cereal_yield}")
+        logger.debug(f"  Food Imports: {food_imports}")
+        logger.debug(f"  Food Production Index: {food_production_index}")
+        logger.debug(f"  GDP Growth: {gdp_growth}")
+        logger.debug(f"  GDP Per Capita: {gdp_per_capita}")
+        logger.debug(f"  Inflation: {inflation}")
+        logger.debug(f"  Population Growth: {population_growth}")
+        logger.debug(f"  GDP Current: {gdp_current}")
 
-        logger.debug(f"  Using lag_cereal: {lag_cereal} (lag provided: {cereal_yield_lag is not None})")
-        logger.debug(f"  Using lag_imports: {lag_imports} (lag provided: {food_imports_lag is not None})")
-        logger.debug(f"  Using lag_prod: {lag_prod} (lag provided: {food_production_lag is not None})")
-        logger.debug(f"  Using lag_gdp: {lag_gdp} (lag provided: {gdp_growth_lag is not None})")
+        # Create feature dictionary
+        features_dict = {
+            'Cereal yield (kg per hectare)': cereal_yield,
+            'Food imports (% of merchandise imports)': food_imports,
+            'Food production index (2014-2016 = 100)': food_production_index,
+            'GDP (current US$)': gdp_current,
+            'GDP growth (annual %)': gdp_growth,
+            'GDP per capita (current US$)': gdp_per_capita,
+            'Inflation, consumer prices (annual %)': inflation,
+            'Population growth (annual %)': population_growth,
+        }
 
-        # EXACT Feature vector order from notebook
-        # [cereal_yield, food_imports, food_production_index, gdp_growth, gdp_per_capita, inflation, population_growth, lag_cereal]
-        feature_vector = np.array([
-            cereal_yield,
-            food_imports,
-            food_production_index,
-            gdp_growth,
-            gdp_per_capita,
-            inflation,
-            population_growth,
-            lag_cereal,
-        ]).reshape(1, -1)
+        # Build feature vector in EXACT order from training
+        feature_vector = np.array([features_dict[feat] for feat in feature_order]).reshape(1, -1)
 
         logger.debug(f"Feature vector shape: {feature_vector.shape}")
         logger.debug(f"Feature vector: {feature_vector}")
 
-        # Check if feature count matches model expectation
-        if hasattr(food_model, 'n_features_in_'):
-            expected_features = food_model.n_features_in_
-            actual_features = feature_vector.shape[1]
-            if expected_features != actual_features:
-                logger.error(f"❌ FEATURE MISMATCH! Expected {expected_features}, got {actual_features}")
-                logger.error(f"   This is why probability differs from notebook!")
+        # Verify feature count
+        if hasattr(model, 'n_features_in_'):
+            expected = model.n_features_in_
+            actual = feature_vector.shape[1]
+            if expected != actual:
+                logger.error(f"❌ FEATURE MISMATCH! Expected {expected}, got {actual}")
+                return {
+                    'country': country,
+                    'probability': 0,
+                    'classification': 'Error: Feature count mismatch',
+                    'topIndicators': [],
+                }
 
-        # EXACT predict_proba from notebook
-        if hasattr(food_model, 'predict_proba'):
-            probability_raw = food_model.predict_proba(feature_vector)[0][1]
-            logger.debug(f"Raw probability from model: {probability_raw}")
+        # Predict probability
+        if hasattr(model, 'predict_proba'):
+            probability_raw = model.predict_proba(feature_vector)[0][1]
         else:
-            probability_raw = food_model.predict(feature_vector)[0]
-            logger.debug(f"Raw prediction from model: {probability_raw}")
+            probability_raw = model.predict(feature_vector)[0]
 
-        # Convert to PERCENTAGE (NOTEBOOK DOES THIS)
         probability = probability_raw * 100
         logger.info(f"Final probability: {probability:.2f}% (raw: {probability_raw:.4f})")
 
-        # Classification (matching your notebook)
+        # Classification
         if probability >= 85:
             classification = 'Critical'
         elif probability >= 70:
@@ -335,40 +355,23 @@ def analyze_food_crisis(
         else:
             classification = 'Low Risk'
 
-        logger.info(f"Classification: {classification}")
-
-        # SHAP
+        # SHAP values
         try:
-            explainer = shap.TreeExplainer(food_model)
-            shapvalues = explainer.shap_values(feature_vector)
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(feature_vector)
 
-            if isinstance(shapvalues, list) and len(shapvalues) > 1:
-                shapvaluespositive = shapvalues[1]
+            if isinstance(shap_values, list) and len(shap_values) > 1:
+                shap_positive = shap_values[1]
             else:
-                shapvaluespositive = shapvalues
+                shap_positive = shap_values
 
-            if hasattr(shapvaluespositive, 'ndim') and shapvaluespositive.ndim == 3:
-                shapvaluespositive = shapvaluespositive[:, :, 1]
+            if hasattr(shap_positive, 'ndim') and shap_positive.ndim == 3:
+                shap_positive = shap_positive[:, :, 1]
 
-            instanceshap = shapvaluespositive[0]
+            instance_shap = shap_positive[0]
 
-            featnames = [
-                'Cereal yield kg/hectare',
-                'Food imports %',
-                'Food production index',
-                'GDP growth %',
-                'GDP per capita USD',
-                'Inflation %',
-                'Population growth %',
-                'Cereal yield lag1'
-            ]
-
-            featurecontribs = sorted(
-                zip(
-                    featnames,
-                    instanceshap,
-                    [cereal_yield, food_imports, food_production_index, gdp_growth, gdp_per_capita, inflation, population_growth, lag_cereal]
-                ),
+            feature_contribs = sorted(
+                zip(feature_order, instance_shap, feature_vector[0]),
                 key=lambda x: abs(x[1]),
                 reverse=True
             )[:3]
@@ -379,7 +382,7 @@ def analyze_food_crisis(
                     'impact': float(contrib),
                     'value': float(val)
                 }
-                for name, contrib, val in featurecontribs
+                for name, contrib, val in feature_contribs
             ]
 
         except Exception as shap_error:

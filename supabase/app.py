@@ -20,7 +20,7 @@ except ImportError as e:
 # =====================================================================
 app = Flask(__name__)
 
-# Enable CORS for Vite port 8081
+# Enable CORS
 CORS(app, resources={
     r"/api/*": {
         "origins": [
@@ -38,10 +38,9 @@ CORS(app, resources={
 })
 
 # =====================================================================
-# JSON Encoder Fix - Handle NumPy types
+# JSON Encoder for NumPy types
 # =====================================================================
 class NumpyJSONEncoder(json.JSONEncoder):
-    """Custom JSON encoder that handles NumPy types"""
     def default(self, obj):
         if isinstance(obj, np.bool_):
             return bool(obj)
@@ -55,11 +54,7 @@ class NumpyJSONEncoder(json.JSONEncoder):
 
 app.json_encoder = NumpyJSONEncoder
 
-# =====================================================================
-# Helper function to convert result to JSON-serializable
-# =====================================================================
 def to_json_serializable(result):
-    """Convert all NumPy types to Python native types"""
     if isinstance(result, dict):
         return {k: to_json_serializable(v) for k, v in result.items()}
     elif isinstance(result, list):
@@ -80,18 +75,20 @@ def to_json_serializable(result):
 # =====================================================================
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Check if API and models are running"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Crisis Analysis API',
+        'service': 'Crisis Analysis API (Pickle-Based Models)',
         'models': 'loaded',
         'cors_enabled': True
     }), 200
 
+# =====================================================================
+# Economic Crisis Endpoint - UPDATED FOR NEW MODEL
+# =====================================================================
 @app.route('/api/analyze/economic', methods=['POST', 'OPTIONS'])
 def analyze_economic():
     """
-    Analyze economic crisis for a country
+    Analyze economic crisis using NEW pickle-based model
     
     Expected JSON:
     {
@@ -102,9 +99,11 @@ def analyze_economic():
         "domesticCredit": 32.5,
         "exports": 3.40,
         "imports": 45.0,
-        "gdpGrowthLag": -2.15,      // (Optional) Previous year value
-        "inflationLag": 25.50        // (Optional) Previous year value
+        "gdpPerCapita": 1234.56,        // NEW - Required
+        "grossFixedCapital": 25.3       // NEW - Required
     }
+    
+    NOTE: Lag parameters REMOVED - new model doesn't use them
     """
     if request.method == 'OPTIONS':
         return '', 204
@@ -112,23 +111,32 @@ def analyze_economic():
     try:
         data = request.get_json()
 
-        # Required fields
-        required_fields = ['country', 'gdpGrowth', 'inflation', 'unemployment',
-                          'domesticCredit', 'exports', 'imports']
+        # Required fields for NEW model
+        required_fields = [
+            'country', 'gdpGrowth', 'inflation', 'unemployment',
+            'domesticCredit', 'exports', 'imports',
+            'gdpPerCapita', 'grossFixedCapital'  # NEW
+        ]
 
-        if not all(field in data for field in required_fields):
+        missing = [f for f in required_fields if f not in data]
+        if missing:
             return jsonify({
                 'error': 'Missing required fields',
+                'missing': missing,
                 'required': required_fields
             }), 400
 
-        print(f"\n📊 Analyzing {data['country']} (Economic Crisis)")
+        print(f"\n📊 Analyzing {data['country']} (Economic Crisis - New Model)")
         print(f"   GDP Growth: {data['gdpGrowth']}")
-        print(f"   GDP Growth Lag: {data.get('gdpGrowthLag', 'NOT PROVIDED - will use current')}")
         print(f"   Inflation: {data['inflation']}")
-        print(f"   Inflation Lag: {data.get('inflationLag', 'NOT PROVIDED - will use current')}")
+        print(f"   Unemployment: {data['unemployment']}")
+        print(f"   Domestic Credit: {data['domesticCredit']}")
+        print(f"   Exports: {data['exports']}")
+        print(f"   Imports: {data['imports']}")
+        print(f"   GDP Per Capita: {data['gdpPerCapita']}")
+        print(f"   Gross Fixed Capital: {data['grossFixedCapital']}")
 
-        # Call analysis function
+        # Call analysis function with NEW parameters
         result = analyze_economic_crisis(
             country=data['country'],
             gdp_growth=float(data['gdpGrowth']),
@@ -137,13 +145,11 @@ def analyze_economic():
             domestic_credit=float(data['domesticCredit']),
             exports=float(data['exports']),
             imports=float(data['imports']),
-            gdp_growth_lag=float(data.get('gdpGrowthLag', data['gdpGrowth'])),
-            inflation_lag=float(data.get('inflationLag', data['inflation'])),
+            gdp_per_capita=float(data['gdpPerCapita']),
+            gross_fixed_capital=float(data['grossFixedCapital']),
         )
 
-        # Convert to JSON-serializable format
         result = to_json_serializable(result)
-
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
 
         return jsonify(result), 200
@@ -165,12 +171,12 @@ def analyze_economic():
         }), 500
 
 # =====================================================================
-# Food Crisis Endpoint - FIXED VERSION
+# Food Crisis Endpoint - UPDATED FOR NEW MODEL
 # =====================================================================
 @app.route('/api/analyze/food', methods=['POST', 'OPTIONS'])
 def analyze_food():
     """
-    Analyze food crisis for a country
+    Analyze food crisis using NEW pickle-based model
     
     Expected JSON:
     {
@@ -182,11 +188,10 @@ def analyze_food():
         "gdpPerCapita": 633.89,
         "inflation": 13.42,
         "populationGrowth": 2.98,
-        "cerealYieldLag": 795.5,              // (Optional) Previous year
-        "foodImportsLag": 17.85,              // (Optional) Previous year
-        "foodProductionLag": 88.45,           // (NEW - CRITICAL) Previous year
-        "gdpGrowthLag": -2.15                 // (NEW - IMPORTANT) Previous year
+        "gdpCurrent": 26.8e9              // NEW - Required (GDP in current US$)
     }
+    
+    NOTE: Lag parameters REMOVED - new model doesn't use them
     """
     if request.method == 'OPTIONS':
         return '', 204
@@ -194,26 +199,32 @@ def analyze_food():
     try:
         data = request.get_json()
 
-        # Required fields
-        required_fields = ['country', 'cerealYield', 'foodImports', 'foodProductionIndex',
-                          'gdpGrowth', 'gdpPerCapita', 'inflation', 'populationGrowth']
+        # Required fields for NEW model
+        required_fields = [
+            'country', 'cerealYield', 'foodImports', 'foodProductionIndex',
+            'gdpGrowth', 'gdpPerCapita', 'inflation', 'populationGrowth',
+            'gdpCurrent'  # NEW
+        ]
 
-        if not all(field in data for field in required_fields):
+        missing = [f for f in required_fields if f not in data]
+        if missing:
             return jsonify({
                 'error': 'Missing required fields',
+                'missing': missing,
                 'required': required_fields
             }), 400
 
-        print(f"\n🍽️ Analyzing {data['country']} (Food Crisis)")
+        print(f"\n🍽️ Analyzing {data['country']} (Food Crisis - New Model)")
         print(f"   Cereal Yield: {data['cerealYield']}")
-        print(f"   Cereal Yield Lag: {data.get('cerealYieldLag', 'NOT PROVIDED - will use current')}")
-        print(f"   Food Production Index: {data['foodProductionIndex']}")
-        print(f"   Food Production Lag: {data.get('foodProductionLag', '❌ MISSING - CRITICAL!')}")
         print(f"   Food Imports: {data['foodImports']}")
-        print(f"   Food Imports Lag: {data.get('foodImportsLag', 'NOT PROVIDED - will use current')}")
-        print(f"   GDP Growth Lag: {data.get('gdpGrowthLag', 'NOT PROVIDED - will use current')}")
+        print(f"   Food Production Index: {data['foodProductionIndex']}")
+        print(f"   GDP Growth: {data['gdpGrowth']}")
+        print(f"   GDP Per Capita: {data['gdpPerCapita']}")
+        print(f"   Inflation: {data['inflation']}")
+        print(f"   Population Growth: {data['populationGrowth']}")
+        print(f"   GDP Current: {data['gdpCurrent']}")
 
-        # Call analysis function
+        # Call analysis function with NEW parameters
         result = analyze_food_crisis(
             country=data['country'],
             cereal_yield=float(data['cerealYield']),
@@ -223,21 +234,16 @@ def analyze_food():
             gdp_per_capita=float(data['gdpPerCapita']),
             inflation=float(data['inflation']),
             population_growth=float(data['populationGrowth']),
-            cereal_yield_lag=float(data.get('cerealYieldLag', data['cerealYield'])),
-            food_imports_lag=float(data.get('foodImportsLag', data['foodImports'])),
-            food_production_lag=float(data.get('foodProductionLag', data['foodProductionIndex'])),  # ← FIXED
-            gdp_growth_lag=float(data.get('gdpGrowthLag', data['gdpGrowth'])),  # ← FIXED
+            gdp_current=float(data['gdpCurrent']),
         )
 
-        # Convert to JSON-serializable format
         result = to_json_serializable(result)
-
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
 
         return jsonify(result), 200
 
     except ValueError as e:
-        print(f"❌ ValueError: {str(e)}")
+        print(f"❌ ValueError: {str(e)}") 
         return jsonify({
             'error': 'Invalid input values',
             'message': str(e)
@@ -268,18 +274,25 @@ def internal_error(error):
 # =====================================================================
 if __name__ == '__main__':
     print("""
-╔═══════════════════════════════════════════════════╗
-║ Crisis Analysis API (FIXED VERSION) ║
-║ Running on http://localhost:3001 ║
-╚═══════════════════════════════════════════════════╝
+╔═════════════════════════════════════════════════════════╗
+║   Crisis Analysis API - Pickle-Based Models (NEW)      ║
+║   Running on http://localhost:3001                      ║
+╚═════════════════════════════════════════════════════════╝
+
+📋 IMPORTANT CHANGES:
+  • Using NEW pickle-based models (economic_model.pkl, food_model.pkl)
+  • Lag parameters REMOVED (models don't use them)
+  • NEW required parameters:
+    - Economic: gdpPerCapita, grossFixedCapital
+    - Food: gdpCurrent
+  • Feature order automatically loaded from pickle
 
 Endpoints:
   POST /api/analyze/economic
   POST /api/analyze/food
-  GET /health
+  GET  /health
 
-Status: ✅ Lag features now properly handled
-Note: Food endpoint now extracts foodProductionLag and gdpGrowthLag
+Status: ✅ Ready for pickle-based inference
 """)
     app.run(
         host='0.0.0.0',

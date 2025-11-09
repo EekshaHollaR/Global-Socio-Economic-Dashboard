@@ -5,9 +5,8 @@ export interface EconomicInput {
   domesticCredit: number;
   exports: number;
   imports: number;
-  
-  gdpGrowthLag?: number;          // Previous year GDP growth
-  inflationLag?: number;           // Previous year inflation
+  gdpPerCapita: number;           // NEW - Required
+  grossFixedCapital: number;      // NEW - Required
 }
 
 export interface FoodInput {
@@ -18,12 +17,7 @@ export interface FoodInput {
   gdpPerCapita: number;
   inflation: number;
   populationGrowth: number;
-  
-  // LAG FEATURES (NEW) - Optional, will fallback to current values if not provided
-  cerealYieldLag?: number;         // Previous year cereal yield
-  foodImportsLag?: number;         // Previous year food imports
-  foodProductionLag?: number;      // Previous year food production (CRITICAL)
-  gdpGrowthLag?: number;           // Previous year GDP growth
+  gdpCurrent: number;             // NEW - Required (total GDP in US$, NOT per capita)
 }
 
 export interface Indicator {
@@ -37,14 +31,7 @@ export interface CrisisResult {
   probability: number;
   classification: string;
   topIndicators: Indicator[];
-  
-  // NEW METADATA - for debugging
-  debug?: {
-    lagFeaturesProvided: boolean;
-    lagValuesUsed: {
-      [key: string]: number | null;
-    };
-  };
+  isHighRisk?: boolean;
 }
 
 // =====================================================================
@@ -54,7 +41,7 @@ export interface CrisisResult {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // =====================================================================
-// VALIDATION HELPER (NEW)
+// VALIDATION HELPER
 // =====================================================================
 
 interface ValidationResult {
@@ -72,14 +59,8 @@ function validateEconomicInput(data: EconomicInput): ValidationResult {
   if (!Number.isFinite(data.domesticCredit)) errors.push('domesticCredit must be a valid number');
   if (!Number.isFinite(data.exports)) errors.push('exports must be a valid number');
   if (!Number.isFinite(data.imports)) errors.push('imports must be a valid number');
-
-  // Optional lag fields - validate if provided
-  if (data.gdpGrowthLag !== undefined && !Number.isFinite(data.gdpGrowthLag)) {
-    errors.push('gdpGrowthLag must be a valid number if provided');
-  }
-  if (data.inflationLag !== undefined && !Number.isFinite(data.inflationLag)) {
-    errors.push('inflationLag must be a valid number if provided');
-  }
+  if (!Number.isFinite(data.gdpPerCapita)) errors.push('gdpPerCapita must be a valid number');
+  if (!Number.isFinite(data.grossFixedCapital)) errors.push('grossFixedCapital must be a valid number');
 
   return {
     isValid: errors.length === 0,
@@ -98,20 +79,7 @@ function validateFoodInput(data: FoodInput): ValidationResult {
   if (!Number.isFinite(data.gdpPerCapita)) errors.push('gdpPerCapita must be a valid number');
   if (!Number.isFinite(data.inflation)) errors.push('inflation must be a valid number');
   if (!Number.isFinite(data.populationGrowth)) errors.push('populationGrowth must be a valid number');
-
-  // Optional lag fields - validate if provided
-  if (data.cerealYieldLag !== undefined && !Number.isFinite(data.cerealYieldLag)) {
-    errors.push('cerealYieldLag must be a valid number if provided');
-  }
-  if (data.foodImportsLag !== undefined && !Number.isFinite(data.foodImportsLag)) {
-    errors.push('foodImportsLag must be a valid number if provided');
-  }
-  if (data.foodProductionLag !== undefined && !Number.isFinite(data.foodProductionLag)) {
-    errors.push('foodProductionLag must be a valid number if provided');
-  }
-  if (data.gdpGrowthLag !== undefined && !Number.isFinite(data.gdpGrowthLag)) {
-    errors.push('gdpGrowthLag must be a valid number if provided');
-  }
+  if (!Number.isFinite(data.gdpCurrent)) errors.push('gdpCurrent must be a valid number');
 
   return {
     isValid: errors.length === 0,
@@ -120,7 +88,7 @@ function validateFoodInput(data: FoodInput): ValidationResult {
 }
 
 // =====================================================================
-// Economic Crisis Analysis - UPDATED
+// Economic Crisis Analysis - PICKLE VERSION (NO LAGS)
 // =====================================================================
 
 export async function analyzeEconomicCrisis(
@@ -137,14 +105,10 @@ export async function analyzeEconomicCrisis(
         probability: 0,
         classification: 'Error: Invalid input data',
         topIndicators: [],
-        debug: {
-          lagFeaturesProvided: false,
-          lagValuesUsed: {}
-        }
       };
     }
 
-    // Prepare request payload with lag features
+    // Prepare request payload (NO LAG FEATURES)
     const payload = {
       country,
       gdpGrowth: data.gdpGrowth,
@@ -153,19 +117,16 @@ export async function analyzeEconomicCrisis(
       domesticCredit: data.domesticCredit,
       exports: data.exports,
       imports: data.imports,
-      
-      // LAG FEATURES (NEW) - Will use current values as fallback if not provided
-      gdpGrowthLag: data.gdpGrowthLag ?? data.gdpGrowth,    // Fallback to current
-      inflationLag: data.inflationLag ?? data.inflation,     // Fallback to current
+      gdpPerCapita: data.gdpPerCapita,           // NEW
+      grossFixedCapital: data.grossFixedCapital, // NEW
     };
 
     console.log('📊 Sending Economic Crisis Analysis Request:', {
       country,
-      hasLags: (data.gdpGrowthLag !== undefined || data.inflationLag !== undefined),
-      lagValues: {
-        gdpGrowthLag: data.gdpGrowthLag,
-        inflationLag: data.inflationLag
-      }
+      gdpGrowth: data.gdpGrowth,
+      inflation: data.inflation,
+      gdpPerCapita: data.gdpPerCapita,
+      grossFixedCapital: data.grossFixedCapital,
     });
 
     const response = await fetch(`${API_BASE_URL}/api/analyze/economic`, {
@@ -183,19 +144,9 @@ export async function analyzeEconomicCrisis(
     }
 
     const result = await response.json();
-    
     console.log('✅ Economic Analysis Result:', result);
-    
-    return {
-      ...result,
-      debug: {
-        lagFeaturesProvided: (data.gdpGrowthLag !== undefined || data.inflationLag !== undefined),
-        lagValuesUsed: {
-          gdpGrowthLag: data.gdpGrowthLag ?? null,
-          inflationLag: data.inflationLag ?? null
-        }
-      }
-    };
+
+    return result;
 
   } catch (error) {
     console.error('❌ Economic crisis analysis error:', error);
@@ -204,16 +155,12 @@ export async function analyzeEconomicCrisis(
       probability: 0,
       classification: 'Error: Analysis failed',
       topIndicators: [],
-      debug: {
-        lagFeaturesProvided: false,
-        lagValuesUsed: {}
-      }
     };
   }
 }
 
 // =====================================================================
-// Food Crisis Analysis - UPDATED
+// Food Crisis Analysis - PICKLE VERSION (NO LAGS)
 // =====================================================================
 
 export async function analyzeFoodCrisis(
@@ -230,14 +177,10 @@ export async function analyzeFoodCrisis(
         probability: 0,
         classification: 'Error: Invalid input data',
         topIndicators: [],
-        debug: {
-          lagFeaturesProvided: false,
-          lagValuesUsed: {}
-        }
       };
     }
 
-    // Prepare request payload with lag features (CRITICAL FOR FOOD MODEL)
+    // Prepare request payload (NO LAG FEATURES)
     const payload = {
       country,
       cerealYield: data.cerealYield,
@@ -247,28 +190,15 @@ export async function analyzeFoodCrisis(
       gdpPerCapita: data.gdpPerCapita,
       inflation: data.inflation,
       populationGrowth: data.populationGrowth,
-      
-      // LAG FEATURES (NEW - CRITICAL!) - Will use current values as fallback
-      cerealYieldLag: data.cerealYieldLag ?? data.cerealYield,
-      foodImportsLag: data.foodImportsLag ?? data.foodImports,
-      foodProductionLag: data.foodProductionLag ?? data.foodProductionIndex,  // ← CRITICAL
-      gdpGrowthLag: data.gdpGrowthLag ?? data.gdpGrowth,
+      gdpCurrent: data.gdpCurrent,  // NEW
     };
 
     console.log('🍽️ Sending Food Crisis Analysis Request:', {
       country,
-      hasLags: (
-        data.cerealYieldLag !== undefined ||
-        data.foodImportsLag !== undefined ||
-        data.foodProductionLag !== undefined ||
-        data.gdpGrowthLag !== undefined
-      ),
-      lagValues: {
-        cerealYieldLag: data.cerealYieldLag,
-        foodImportsLag: data.foodImportsLag,
-        foodProductionLag: data.foodProductionLag,
-        gdpGrowthLag: data.gdpGrowthLag
-      }
+      cerealYield: data.cerealYield,
+      foodImports: data.foodImports,
+      foodProductionIndex: data.foodProductionIndex,
+      gdpCurrent: data.gdpCurrent,
     });
 
     const response = await fetch(`${API_BASE_URL}/api/analyze/food`, {
@@ -286,26 +216,9 @@ export async function analyzeFoodCrisis(
     }
 
     const result = await response.json();
-    
     console.log('✅ Food Analysis Result:', result);
-    
-    return {
-      ...result,
-      debug: {
-        lagFeaturesProvided: (
-          data.cerealYieldLag !== undefined ||
-          data.foodImportsLag !== undefined ||
-          data.foodProductionLag !== undefined ||
-          data.gdpGrowthLag !== undefined
-        ),
-        lagValuesUsed: {
-          cerealYieldLag: data.cerealYieldLag ?? null,
-          foodImportsLag: data.foodImportsLag ?? null,
-          foodProductionLag: data.foodProductionLag ?? null,
-          gdpGrowthLag: data.gdpGrowthLag ?? null
-        }
-      }
-    };
+
+    return result;
 
   } catch (error) {
     console.error('❌ Food crisis analysis error:', error);
@@ -314,16 +227,12 @@ export async function analyzeFoodCrisis(
       probability: 0,
       classification: 'Error: Analysis failed',
       topIndicators: [],
-      debug: {
-        lagFeaturesProvided: false,
-        lagValuesUsed: {}
-      }
     };
   }
 }
 
 // =====================================================================
-// Health Check (Optional - verify API is running)
+// Health Check
 // =====================================================================
 
 export async function checkAPIHealth(): Promise<{
@@ -336,7 +245,7 @@ export async function checkAPIHealth(): Promise<{
 }> {
   try {
     const response = await fetch(`${API_BASE_URL}/health`);
-    
+
     return {
       isHealthy: response.ok,
       details: {
@@ -356,63 +265,4 @@ export async function checkAPIHealth(): Promise<{
       }
     };
   }
-}
-
-// =====================================================================
-// HELPER: Build payload with historical data (NEW)
-// =====================================================================
-
-/**
- * Helper function to build economic input with lag features
- * Use this in your components to ensure lag data is included
- */
-export function buildEconomicInput(
-  current: {
-    gdpGrowth: number;
-    inflation: number;
-    unemployment: number;
-    domesticCredit: number;
-    exports: number;
-    imports: number;
-  },
-  previous?: {
-    gdpGrowth?: number;
-    inflation?: number;
-  }
-): EconomicInput {
-  return {
-    ...current,
-    gdpGrowthLag: previous?.gdpGrowth,
-    inflationLag: previous?.inflation,
-  };
-}
-
-/**
- * Helper function to build food input with lag features
- * Use this in your components to ensure lag data is included
- */
-export function buildFoodInput(
-  current: {
-    cerealYield: number;
-    foodImports: number;
-    foodProductionIndex: number;
-    gdpGrowth: number;
-    gdpPerCapita: number;
-    inflation: number;
-    populationGrowth: number;
-  },
-  previous?: {
-    cerealYield?: number;
-    foodImports?: number;
-    foodProductionIndex?: number;
-    gdpGrowth?: number;
-  }
-): FoodInput {
-  return {
-    ...current,
-    cerealYieldLag: previous?.cerealYield,
-    foodImportsLag: previous?.foodImports,
-    foodProductionLag: previous?.foodProductionIndex,
-    gdpGrowthLag: previous?.gdpGrowth,
-  };
 }
