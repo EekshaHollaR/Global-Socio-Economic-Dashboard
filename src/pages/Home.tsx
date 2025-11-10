@@ -25,8 +25,8 @@ const Home = () => {
               <Globe className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display text-lg font-bold text-foreground">GSCED</span>
-              <span className="text-xs text-muted-foreground">Global Socioeconomic Data</span>
+              <span className="font-display text-lg font-bold text-foreground">GSECD</span>
+              <span className="text-xs text-muted-foreground">Global Socio-Economic Crisis Dashboard</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -44,7 +44,7 @@ const Home = () => {
       <section className="container py-20">
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6">
-            Global Socioeconomic Crisis Early Detection
+            Global Socio-Economic Crisis Early Detection
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
             Advanced analytics platform for monitoring and predicting food security and economic crises worldwide
@@ -217,7 +217,7 @@ const Home = () => {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container text-center text-muted-foreground">
-          <p>&copy; 2024 GSCED. All rights reserved.</p>
+          <p>&copy; 2024 GSECD. All rights reserved.</p>
         </div>
       </footer>
     </div>

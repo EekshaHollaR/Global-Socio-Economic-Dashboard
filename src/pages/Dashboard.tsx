@@ -113,7 +113,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="font-display text-4xl font-bold text-foreground">
-                Global Socioeconomic Dashboard
+                Global Socio-Economic Crisis Dashboard
               </h1>
               <p className="text-lg text-muted-foreground">
                 Comprehensive analysis of food security and economic indicators

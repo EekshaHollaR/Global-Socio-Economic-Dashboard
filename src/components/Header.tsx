@@ -17,8 +17,8 @@ const Header = () => {
               <Globe className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display text-lg font-bold text-foreground">GSCED</span>
-              <span className="text-xs text-muted-foreground">Global Socioeconomic Data</span>
+              <span className="font-display text-lg font-bold text-foreground">GSECD</span>
+              <span className="text-xs text-muted-foreground">Global Socio-Economic Crisis Dashboard</span>
             </div>
           </Link>
         </div>

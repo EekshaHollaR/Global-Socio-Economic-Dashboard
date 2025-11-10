@@ -16,7 +16,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your AI assistant for global socioeconomic data analysis. Ask me anything about GDP trends, food production, economic indicators, or specific countries.",
+      content: "Hello! I'm your AI assistant for global socio-economic data analysis. Ask me anything about GDP trends, food production, economic indicators, or specific countries.",
     },
   ]);
   const [input, setInput] = useState("");

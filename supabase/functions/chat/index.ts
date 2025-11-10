@@ -29,7 +29,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a helpful AI assistant specialized in analyzing global socioeconomic data. You help users understand trends in GDP, food production, economic indicators, and country-specific data. Provide clear, concise answers based on the data context. When users ask about specific countries or indicators, provide relevant insights and comparisons."
+            content: "You are a helpful AI assistant specialized in analyzing global socio-economic data. You help users understand trends in GDP, food production, economic indicators, and country-specific data. Provide clear, concise answers based on the data context. When users ask about specific countries or indicators, provide relevant insights and comparisons."
           },
           ...messages,
         ],

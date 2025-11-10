@@ -156,7 +156,7 @@ const Forecaster = () => {
                 5-Year Economic Forecaster
               </h1>
               <p className="text-lg text-muted-foreground">
-                Predictive analysis of key socioeconomic indicators
+                Predictive analysis of key socio-economic indicators
               </p>
             </div>
           </div>

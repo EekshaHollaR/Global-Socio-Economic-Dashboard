@@ -148,7 +148,7 @@ const CrisisAnalyzer = () => {
               Global Crisis Risk Analyzer
             </h1>
             <p className="text-lg text-muted-foreground">
-              Using AI-driven indicators and pickle-based ML models to detect early signs of socioeconomic instability.
+              Using AI-driven indicators and pickle-based ML models to detect early signs of socio-economic instability.
             </p>
           </div>
 
@@ -342,7 +342,7 @@ const CrisisAnalyzer = () => {
 
                       {/* Debug Info (optional - comment out for production) */}
                       <div className="mt-4 pt-4 border-t border-muted text-xs text-muted-foreground">
-                        <p>Model: {crisisType === 'economic' ? 'Economic Crisis (Pickle)' : 'Food Crisis (Pickle)'}</p>
+                        <p>Model: {crisisType === 'economic' ? 'Economic Crisis' : 'Food Crisis'}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -386,10 +386,10 @@ const CrisisAnalyzer = () => {
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Select the crisis type and click "Run Crisis Prediction Analysis" to analyze global risk
-                indicators using AI-driven pickle-based models.
+                indicators using predictive models.
               </p>
               <p className="text-sm text-muted-foreground">
-                💡 Tip: Select "Economic Crisis" or "Food Crisis" and analyze global indicators
+                Select "Economic Crisis" or "Food Crisis" and analyze global indicators
               </p>
             </CardContent>
           </Card>

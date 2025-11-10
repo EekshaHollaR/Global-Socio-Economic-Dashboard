@@ -62,7 +62,7 @@ const Countries = () => {
             Country Profiles
           </h1>
           <p className="text-lg text-muted-foreground">
-            Explore detailed socioeconomic indicators by country
+            Explore detailed socio-economic indicators by country
           </p>
         </section>
 

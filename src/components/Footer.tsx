@@ -10,10 +10,10 @@ const Footer = () => {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <Globe className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-display font-bold text-foreground">GSCED</span>
+              <span className="font-display font-bold text-foreground">GSECD</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Global Socioeconomic Data Portal providing comprehensive analysis
+              Global Socio-Economic Crisis Dashboard providing comprehensive analysis
               of food security and economic indicators worldwide.
             </p>
           </div>
@@ -23,8 +23,6 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• World Bank Open Data</li>
               <li>• Food and Agriculture Organization (FAO)</li>
-              <li>• International Monetary Fund (IMF)</li>
-              <li>• United Nations Statistics Division</li>
             </ul>
           </div>
 
@@ -32,15 +30,14 @@ const Footer = () => {
             <h3 className="font-semibold text-foreground mb-3">Quick Links</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Methodology</li>
-              <li>• Data Dictionary</li>
-              <li>• API Documentation</li>
+              {/* <li>• Data Dictionary</li> */}
               <li>• Terms of Use</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Global Socioeconomic Data Portal. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Global Socio-Economic Crisis Dashboard. All rights reserved.</p>
           <p className="mt-1">Data updated through 2024 • {" "}
             <span className="text-primary">Open Data Initiative</span>
           </p>

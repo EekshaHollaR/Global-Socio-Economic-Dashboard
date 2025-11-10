@@ -41,7 +41,7 @@ const Signup = () => {
     } else {
       toast({
         title: "Account Created",
-        description: "Welcome to GSCED!",
+        description: "Welcome to GSECD!",
       });
     }
 
