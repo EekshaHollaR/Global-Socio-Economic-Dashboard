@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
+import CountryFilter from "@/components/CountryFilter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Globe } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ import type { FoodDataRow } from "@/types/data";
 const EconomyAnalysis = () => {
   const [loading, setLoading] = useState(true);
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,11 +38,18 @@ const EconomyAnalysis = () => {
     loadData();
   }, []);
 
+  // Get unique countries from foodData
+  const uniqueCountries = Array.from(new Set(foodData.map((row) => row.countryName))).sort();
+
   // GDP Growth trends
   const getGDPGrowthTrends = () => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, { positive: number[]; negative: number[] }>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.gdpGrowth !== undefined && !isNaN(row.gdpGrowth)) {
         if (!yearlyData.has(row.year)) {
           yearlyData.set(row.year, { positive: [], negative: [] });
@@ -72,7 +81,11 @@ const EconomyAnalysis = () => {
 
   // GDP per capita distribution
   const getGDPPerCapitaDistribution = () => {
-    const latestYear = Math.max(...foodData.map((d) => d.year));
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    const latestYear = Math.max(...filteredData.map((d) => d.year));
     const ranges = [
       { label: "< $5k", min: 0, max: 5000, count: 0 },
       { label: "$5k-$15k", min: 5000, max: 15000, count: 0 },
@@ -81,7 +94,7 @@ const EconomyAnalysis = () => {
       { label: "> $50k", min: 50000, max: Infinity, count: 0 },
     ];
 
-    foodData
+    filteredData
       .filter((row) => row.year === latestYear && row.gdpPerCapita !== undefined)
       .forEach((row) => {
         const gdp = row.gdpPerCapita!;
@@ -94,9 +107,13 @@ const EconomyAnalysis = () => {
 
   // Inflation trends
   const getInflationTrends = () => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.inflation !== undefined && !isNaN(row.inflation) && Math.abs(row.inflation) < 100) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.inflation);
@@ -115,9 +132,13 @@ const EconomyAnalysis = () => {
 
   // Population growth
   const getPopulationGrowth = () => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.populationGrowth !== undefined && !isNaN(row.populationGrowth)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.populationGrowth);
@@ -177,6 +198,11 @@ const EconomyAnalysis = () => {
               <CardDescription>Countries with positive vs negative growth</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={gdpGrowthTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -213,6 +239,11 @@ const EconomyAnalysis = () => {
               <CardDescription>Number of countries by income level</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={gdpPerCapitaDist}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -242,6 +273,11 @@ const EconomyAnalysis = () => {
               <CardDescription>Average and median inflation rates</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={inflationTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -282,6 +318,11 @@ const EconomyAnalysis = () => {
               <CardDescription>Average global population growth trends</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={populationGrowth}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

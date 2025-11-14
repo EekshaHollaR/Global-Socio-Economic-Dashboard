@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
+import CountryFilter from "@/components/CountryFilter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, Activity } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import type { FoodDataRow } from "@/types/data";
 const Trends = () => {
   const [loading, setLoading] = useState(true);
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,9 +36,16 @@ const Trends = () => {
     loadData();
   }, []);
 
+  // Get unique countries from foodData
+  const uniqueCountries = Array.from(new Set(foodData.map((row) => row.countryName))).sort();
+
   // Compare GDP growth vs Food production
   const getGDPFoodCorrelation = () => {
-    return foodData
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    return filteredData
       .filter(
         (row) =>
           row.year >= 2015 &&
@@ -56,8 +65,17 @@ const Trends = () => {
     const topCountries = ["United States", "China", "Japan", "Germany", "India", "United Kingdom"];
     const yearlyData = new Map<number, Map<string, number>>();
 
-    foodData
-      .filter((row) => topCountries.includes(row.countryName) && row.gdpGrowth !== undefined)
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    filteredData
+      .filter((row) => {
+        if (selectedCountry) {
+          return row.countryName === selectedCountry && row.gdpGrowth !== undefined;
+        }
+        return topCountries.includes(row.countryName) && row.gdpGrowth !== undefined;
+      })
       .forEach((row) => {
         if (!yearlyData.has(row.year)) {
           yearlyData.set(row.year, new Map());
@@ -82,8 +100,17 @@ const Trends = () => {
     const regions = ["United States", "China", "India", "Brazil", "France"];
     const yearlyData = new Map<number, Map<string, number>>();
 
-    foodData
-      .filter((row) => regions.includes(row.countryName) && row.foodProductionIndex !== undefined)
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    filteredData
+      .filter((row) => {
+        if (selectedCountry) {
+          return row.countryName === selectedCountry && row.foodProductionIndex !== undefined;
+        }
+        return regions.includes(row.countryName) && row.foodProductionIndex !== undefined;
+      })
       .forEach((row) => {
         if (!yearlyData.has(row.year)) {
           yearlyData.set(row.year, new Map());
@@ -105,7 +132,11 @@ const Trends = () => {
 
   // Inflation vs GDP growth
   const getInflationGDPRelation = () => {
-    return foodData
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    return filteredData
       .filter(
         (row) =>
           row.year === 2023 &&
@@ -162,6 +193,11 @@ const Trends = () => {
               <CardDescription>Multi-country GDP growth trends</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={topCountriesGDP}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -191,6 +227,11 @@ const Trends = () => {
               <CardDescription>Regional food production trends</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={regionalFood}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -220,6 +261,11 @@ const Trends = () => {
               <CardDescription>Correlation analysis (2015-present)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -256,6 +302,11 @@ const Trends = () => {
               <CardDescription>Relationship between inflation and economic growth</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

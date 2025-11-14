@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
+import CountryFilter from "@/components/CountryFilter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wheat, TrendingUp, MapPin } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ import type { FoodDataRow } from "@/types/data";
 const FoodAnalysis = () => {
   const [loading, setLoading] = useState(true);
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -37,10 +39,17 @@ const FoodAnalysis = () => {
     loadData();
   }, []);
 
+  // Get unique countries from foodData
+  const uniqueCountries = Array.from(new Set(foodData.map((row) => row.countryName))).sort();
+
   // Food production trends
   const getProductionTrends = () => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.foodProductionIndex !== undefined && !isNaN(row.foodProductionIndex)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.foodProductionIndex);
@@ -57,8 +66,12 @@ const FoodAnalysis = () => {
 
   // Cereal yield analysis
   const getCerealYieldData = () => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.cerealYield !== undefined && !isNaN(row.cerealYield)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.cerealYield);
@@ -76,9 +89,24 @@ const FoodAnalysis = () => {
 
   // Food imports by region (sample top countries)
   const getFoodImportsData = () => {
-    const latestYear = Math.max(...foodData.map((d) => d.year));
-    return foodData
-      .filter((row) => row.year === latestYear && row.foodImports !== undefined)
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    const latestYear = Math.max(...filteredData.map((d) => d.year));
+    const data = filteredData
+      .filter((row) => row.year === latestYear && row.foodImports !== undefined);
+
+    if (selectedCountry) {
+      // If country selected, show that country's data
+      return data.map((row) => ({
+        country: row.countryName,
+        imports: row.foodImports || 0,
+      }));
+    }
+
+    // Otherwise show top 15 countries
+    return data
       .sort((a, b) => (b.foodImports || 0) - (a.foodImports || 0))
       .slice(0, 15)
       .map((row) => ({
@@ -89,7 +117,11 @@ const FoodAnalysis = () => {
 
   // Production vs GDP correlation
   const getCorrelationData = () => {
-    return foodData
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
+    return filteredData
       .filter(
         (row) =>
           row.year === 2023 &&
@@ -156,6 +188,11 @@ const FoodAnalysis = () => {
               <CardDescription>Average production trends over time</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={productionTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -187,6 +224,11 @@ const FoodAnalysis = () => {
               <CardDescription>Average cereal yield (kg per hectare)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={cerealYield}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -218,6 +260,11 @@ const FoodAnalysis = () => {
               <CardDescription>Latest year data (% of merchandise imports)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={foodImports} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -251,6 +298,11 @@ const FoodAnalysis = () => {
               <CardDescription>Correlation between production and GDP per capita</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
 import { forecastIndicator, calculateGrowthRate, ForecastPoint } from "@/lib/forecasting";
+import CountryFilter from "@/components/CountryFilter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, Activity, DollarSign, Wheat } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import type { FoodDataRow } from "@/types/data";
 const Forecaster = () => {
   const [loading, setLoading] = useState(true);
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,11 +36,18 @@ const Forecaster = () => {
     loadData();
   }, []);
 
+  // Get unique countries from foodData
+  const uniqueCountries = Array.from(new Set(foodData.map((row) => row.countryName))).sort();
+
   // Forecast global GDP growth
   const forecastGDPGrowth = (): ForecastPoint[] => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.gdpGrowth !== undefined && !isNaN(row.gdpGrowth)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.gdpGrowth);
@@ -58,9 +67,13 @@ const Forecaster = () => {
 
   // Forecast food production
   const forecastFoodProduction = (): ForecastPoint[] => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.foodProductionIndex !== undefined && !isNaN(row.foodProductionIndex)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.foodProductionIndex);
@@ -80,9 +93,13 @@ const Forecaster = () => {
 
   // Forecast GDP per capita
   const forecastGDPPerCapita = (): ForecastPoint[] => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.gdpPerCapita !== undefined && !isNaN(row.gdpPerCapita)) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.gdpPerCapita);
@@ -102,9 +119,13 @@ const Forecaster = () => {
 
   // Forecast inflation
   const forecastInflation = (): ForecastPoint[] => {
+    const filteredData = selectedCountry
+      ? foodData.filter((row) => row.countryName === selectedCountry)
+      : foodData;
+
     const yearlyData = new Map<number, number[]>();
     
-    foodData.forEach((row) => {
+    filteredData.forEach((row) => {
       if (row.inflation !== undefined && !isNaN(row.inflation) && Math.abs(row.inflation) < 100) {
         if (!yearlyData.has(row.year)) yearlyData.set(row.year, []);
         yearlyData.get(row.year)!.push(row.inflation);
@@ -183,6 +204,11 @@ const Forecaster = () => {
               <CardDescription>Projected average global GDP growth (%)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gdpGrowthForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -219,6 +245,11 @@ const Forecaster = () => {
               <CardDescription>Projected global food production trends</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={foodProductionForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -255,6 +286,11 @@ const Forecaster = () => {
               <CardDescription>Projected average GDP per capita (USD)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gdpPerCapitaForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -291,6 +327,11 @@ const Forecaster = () => {
               <CardDescription>Projected average inflation trends (%)</CardDescription>
             </CardHeader>
             <CardContent>
+              <CountryFilter
+                countries={uniqueCountries}
+                selectedCountry={selectedCountry}
+                onChange={setSelectedCountry}
+              />
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={inflationForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
