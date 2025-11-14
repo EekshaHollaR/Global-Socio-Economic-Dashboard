@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
 import CountryFilter from "@/components/CountryFilter";
+import MultiCountryFilter from "@/components/MultiCountryFilter";
+import DownloadButton from "@/components/DownloadButton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, Activity } from "lucide-react";
 import {
@@ -21,6 +23,9 @@ const Trends = () => {
   const [loading, setLoading] = useState(true);
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  // Multi-select for comparative charts
+  const [selectedCountriesGDP, setSelectedCountriesGDP] = useState<string[]>([]);
+  const [selectedCountriesFood, setSelectedCountriesFood] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -65,24 +70,35 @@ const Trends = () => {
     const topCountries = ["United States", "China", "Japan", "Germany", "India", "United Kingdom"];
     const yearlyData = new Map<number, Map<string, number>>();
 
-    const filteredData = selectedCountry
-      ? foodData.filter((row) => row.countryName === selectedCountry)
-      : foodData;
+    // If countries selected, use them; otherwise use all top countries for average
+    const countriesToUse = selectedCountriesGDP.length > 0 
+      ? selectedCountriesGDP 
+      : topCountries;
 
-    filteredData
-      .filter((row) => {
-        if (selectedCountry) {
-          return row.countryName === selectedCountry && row.gdpGrowth !== undefined;
-        }
-        return topCountries.includes(row.countryName) && row.gdpGrowth !== undefined;
-      })
-      .forEach((row) => {
-        if (!yearlyData.has(row.year)) {
-          yearlyData.set(row.year, new Map());
-        }
-        yearlyData.get(row.year)!.set(row.countryName, row.gdpGrowth!);
-      });
+    const filteredData = foodData.filter((row) => 
+      countriesToUse.includes(row.countryName) && row.gdpGrowth !== undefined
+    );
 
+    filteredData.forEach((row) => {
+      if (!yearlyData.has(row.year)) {
+        yearlyData.set(row.year, new Map());
+      }
+      yearlyData.get(row.year)!.set(row.countryName, row.gdpGrowth!);
+    });
+
+    // If no countries selected, compute average
+    if (selectedCountriesGDP.length === 0) {
+      return Array.from(yearlyData.entries())
+        .map(([year, countries]) => {
+          const values = Array.from(countries.values());
+          const avg = values.reduce((a, b) => a + b, 0) / values.length;
+          return { year, "Average": avg };
+        })
+        .filter((d) => d.year >= 2010)
+        .sort((a, b) => a.year - b.year);
+    }
+
+    // Return data with selected countries
     return Array.from(yearlyData.entries())
       .map(([year, countries]) => {
         const data: any = { year };
@@ -100,24 +116,35 @@ const Trends = () => {
     const regions = ["United States", "China", "India", "Brazil", "France"];
     const yearlyData = new Map<number, Map<string, number>>();
 
-    const filteredData = selectedCountry
-      ? foodData.filter((row) => row.countryName === selectedCountry)
-      : foodData;
+    // If countries selected, use them; otherwise use all regions for average
+    const countriesToUse = selectedCountriesFood.length > 0 
+      ? selectedCountriesFood 
+      : regions;
 
-    filteredData
-      .filter((row) => {
-        if (selectedCountry) {
-          return row.countryName === selectedCountry && row.foodProductionIndex !== undefined;
-        }
-        return regions.includes(row.countryName) && row.foodProductionIndex !== undefined;
-      })
-      .forEach((row) => {
-        if (!yearlyData.has(row.year)) {
-          yearlyData.set(row.year, new Map());
-        }
-        yearlyData.get(row.year)!.set(row.countryName, row.foodProductionIndex!);
-      });
+    const filteredData = foodData.filter((row) => 
+      countriesToUse.includes(row.countryName) && row.foodProductionIndex !== undefined
+    );
 
+    filteredData.forEach((row) => {
+      if (!yearlyData.has(row.year)) {
+        yearlyData.set(row.year, new Map());
+      }
+      yearlyData.get(row.year)!.set(row.countryName, row.foodProductionIndex!);
+    });
+
+    // If no countries selected, compute average
+    if (selectedCountriesFood.length === 0) {
+      return Array.from(yearlyData.entries())
+        .map(([year, countries]) => {
+          const values = Array.from(countries.values());
+          const avg = values.reduce((a, b) => a + b, 0) / values.length;
+          return { year, "Average": avg };
+        })
+        .filter((d) => d.year >= 2010)
+        .sort((a, b) => a.year - b.year);
+    }
+
+    // Return data with selected countries
     return Array.from(yearlyData.entries())
       .map(([year, countries]) => {
         const data: any = { year };
@@ -193,11 +220,14 @@ const Trends = () => {
               <CardDescription>Multi-country GDP growth trends</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <MultiCountryFilter
+                  countries={uniqueCountries}
+                  selectedCountries={selectedCountriesGDP}
+                  onChange={setSelectedCountriesGDP}
+                />
+                <DownloadButton data={topCountriesGDP} filename="gdp-growth-comparison" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={topCountriesGDP}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -211,11 +241,35 @@ const Trends = () => {
                     }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="United States" stroke="hsl(var(--chart-1))" />
-                  <Line type="monotone" dataKey="China" stroke="hsl(var(--chart-2))" />
-                  <Line type="monotone" dataKey="Japan" stroke="hsl(var(--chart-3))" />
-                  <Line type="monotone" dataKey="Germany" stroke="hsl(var(--chart-4))" />
-                  <Line type="monotone" dataKey="India" stroke="hsl(var(--chart-5))" />
+                  {selectedCountriesGDP.length === 0 ? (
+                    <Line type="monotone" dataKey="Average" stroke="hsl(var(--chart-1))" />
+                  ) : (
+                    <>
+                      {selectedCountriesGDP.includes("United States") && (
+                        <Line type="monotone" dataKey="United States" stroke="hsl(var(--chart-1))" />
+                      )}
+                      {selectedCountriesGDP.includes("China") && (
+                        <Line type="monotone" dataKey="China" stroke="hsl(var(--chart-2))" />
+                      )}
+                      {selectedCountriesGDP.includes("Japan") && (
+                        <Line type="monotone" dataKey="Japan" stroke="hsl(var(--chart-3))" />
+                      )}
+                      {selectedCountriesGDP.includes("Germany") && (
+                        <Line type="monotone" dataKey="Germany" stroke="hsl(var(--chart-4))" />
+                      )}
+                      {selectedCountriesGDP.includes("India") && (
+                        <Line type="monotone" dataKey="India" stroke="hsl(var(--chart-5))" />
+                      )}
+                      {selectedCountriesGDP.filter(c => !["United States", "China", "Japan", "Germany", "India"].includes(c)).map((country, idx) => (
+                        <Line 
+                          key={country} 
+                          type="monotone" 
+                          dataKey={country} 
+                          stroke={`hsl(var(--chart-${((idx % 5) + 1)}))`} 
+                        />
+                      ))}
+                    </>
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -227,11 +281,14 @@ const Trends = () => {
               <CardDescription>Regional food production trends</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <MultiCountryFilter
+                  countries={uniqueCountries}
+                  selectedCountries={selectedCountriesFood}
+                  onChange={setSelectedCountriesFood}
+                />
+                <DownloadButton data={regionalFood} filename="food-production-by-country" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={regionalFood}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -245,11 +302,35 @@ const Trends = () => {
                     }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="United States" stroke="hsl(var(--chart-1))" />
-                  <Line type="monotone" dataKey="China" stroke="hsl(var(--chart-2))" />
-                  <Line type="monotone" dataKey="India" stroke="hsl(var(--chart-3))" />
-                  <Line type="monotone" dataKey="Brazil" stroke="hsl(var(--chart-4))" />
-                  <Line type="monotone" dataKey="France" stroke="hsl(var(--chart-5))" />
+                  {selectedCountriesFood.length === 0 ? (
+                    <Line type="monotone" dataKey="Average" stroke="hsl(var(--chart-1))" />
+                  ) : (
+                    <>
+                      {selectedCountriesFood.includes("United States") && (
+                        <Line type="monotone" dataKey="United States" stroke="hsl(var(--chart-1))" />
+                      )}
+                      {selectedCountriesFood.includes("China") && (
+                        <Line type="monotone" dataKey="China" stroke="hsl(var(--chart-2))" />
+                      )}
+                      {selectedCountriesFood.includes("India") && (
+                        <Line type="monotone" dataKey="India" stroke="hsl(var(--chart-3))" />
+                      )}
+                      {selectedCountriesFood.includes("Brazil") && (
+                        <Line type="monotone" dataKey="Brazil" stroke="hsl(var(--chart-4))" />
+                      )}
+                      {selectedCountriesFood.includes("France") && (
+                        <Line type="monotone" dataKey="France" stroke="hsl(var(--chart-5))" />
+                      )}
+                      {selectedCountriesFood.filter(c => !["United States", "China", "India", "Brazil", "France"].includes(c)).map((country, idx) => (
+                        <Line 
+                          key={country} 
+                          type="monotone" 
+                          dataKey={country} 
+                          stroke={`hsl(var(--chart-${((idx % 5) + 1)}))`} 
+                        />
+                      ))}
+                    </>
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -261,11 +342,14 @@ const Trends = () => {
               <CardDescription>Correlation analysis (2015-present)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={correlationData} filename="gdp-food-correlation" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -302,11 +386,14 @@ const Trends = () => {
               <CardDescription>Relationship between inflation and economic growth</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={inflationGDP} filename="inflation-gdp-relation" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

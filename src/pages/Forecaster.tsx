@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
 import { forecastIndicator, calculateGrowthRate, ForecastPoint } from "@/lib/forecasting";
 import CountryFilter from "@/components/CountryFilter";
+import DownloadButton from "@/components/DownloadButton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TrendingUp, Activity, DollarSign, Wheat } from "lucide-react";
 import {
@@ -204,11 +205,14 @@ const Forecaster = () => {
               <CardDescription>Projected average global GDP growth (%)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={gdpGrowthForecast} filename="gdp-growth-forecast" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gdpGrowthForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -245,11 +249,14 @@ const Forecaster = () => {
               <CardDescription>Projected global food production trends</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={foodProductionForecast} filename="food-production-forecast" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={foodProductionForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -286,11 +293,14 @@ const Forecaster = () => {
               <CardDescription>Projected average GDP per capita (USD)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={gdpPerCapitaForecast} filename="gdp-per-capita-forecast" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gdpPerCapitaForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -327,11 +337,14 @@ const Forecaster = () => {
               <CardDescription>Projected average inflation trends (%)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={inflationForecast} filename="inflation-forecast" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={inflationForecast}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

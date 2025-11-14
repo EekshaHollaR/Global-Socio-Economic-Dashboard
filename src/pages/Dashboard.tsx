@@ -5,6 +5,7 @@ import DataTable from "@/components/DataTable";
 import WorldMap from "@/components/WorldMap";
 import AlertsSection from "@/components/AlertsSection";
 import CountryFilter from "@/components/CountryFilter";
+import DownloadButton from "@/components/DownloadButton";
 import { Globe, TrendingUp, Database, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -178,11 +179,14 @@ const Dashboard = () => {
               <CardDescription>Average annual growth rate by year</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={globalTrends} filename="gdp-growth-trends" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={globalTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -222,11 +226,14 @@ const Dashboard = () => {
               <CardDescription>Global average (2014-2016 = 100)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={globalTrends} filename="food-production-index" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={globalTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

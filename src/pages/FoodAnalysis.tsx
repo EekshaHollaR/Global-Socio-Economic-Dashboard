@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
 import CountryFilter from "@/components/CountryFilter";
+import DownloadButton from "@/components/DownloadButton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wheat, TrendingUp, MapPin } from "lucide-react";
 import {
@@ -188,11 +189,14 @@ const FoodAnalysis = () => {
               <CardDescription>Average production trends over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={productionTrends} filename="food-production-index" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={productionTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -224,11 +228,14 @@ const FoodAnalysis = () => {
               <CardDescription>Average cereal yield (kg per hectare)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={cerealYield} filename="cereal-yield-trends" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={cerealYield}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -260,11 +267,14 @@ const FoodAnalysis = () => {
               <CardDescription>Latest year data (% of merchandise imports)</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={foodImports} filename="food-imports" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={foodImports} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -298,11 +308,14 @@ const FoodAnalysis = () => {
               <CardDescription>Correlation between production and GDP per capita</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={correlationData} filename="food-production-vs-gdp" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

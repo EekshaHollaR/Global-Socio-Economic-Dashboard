@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DataLoader } from "@/lib/dataLoader";
 import CountryFilter from "@/components/CountryFilter";
+import DownloadButton from "@/components/DownloadButton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Globe } from "lucide-react";
 import {
@@ -198,11 +199,14 @@ const EconomyAnalysis = () => {
               <CardDescription>Countries with positive vs negative growth</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={gdpGrowthTrends} filename="gdp-growth-distribution" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={gdpGrowthTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -239,11 +243,14 @@ const EconomyAnalysis = () => {
               <CardDescription>Number of countries by income level</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={gdpPerCapitaDist} filename="gdp-per-capita-distribution" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={gdpPerCapitaDist}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -273,11 +280,14 @@ const EconomyAnalysis = () => {
               <CardDescription>Average and median inflation rates</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={inflationTrends} filename="inflation-trends" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={inflationTrends}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -318,11 +328,14 @@ const EconomyAnalysis = () => {
               <CardDescription>Average global population growth trends</CardDescription>
             </CardHeader>
             <CardContent>
-              <CountryFilter
-                countries={uniqueCountries}
-                selectedCountry={selectedCountry}
-                onChange={setSelectedCountry}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <CountryFilter
+                  countries={uniqueCountries}
+                  selectedCountry={selectedCountry}
+                  onChange={setSelectedCountry}
+                />
+                <DownloadButton data={populationGrowth} filename="population-growth" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={populationGrowth}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

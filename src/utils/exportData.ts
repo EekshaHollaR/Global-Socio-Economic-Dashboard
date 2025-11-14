@@ -1,0 +1,67 @@
+import * as XLSX from "xlsx";
+
+/**
+ * Export data to CSV format
+ */
+export function exportToCSV(data: any[], filename: string): void {
+  if (!data || data.length === 0) {
+    console.warn("No data to export");
+    return;
+  }
+
+  // Get headers from first object
+  const headers = Object.keys(data[0]);
+  
+  // Create CSV content
+  const csvContent = [
+    headers.join(","),
+    ...data.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header];
+          // Handle values that contain commas, quotes, or newlines
+          if (value === null || value === undefined) return "";
+          const stringValue = String(value);
+          if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        })
+        .join(",")
+    ),
+  ].join("\n");
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${filename}.csv`);
+  link.style.visibility = "hidden";
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export data to Excel (.xlsx) format
+ */
+export function exportToXLSX(data: any[], filename: string): void {
+  if (!data || data.length === 0) {
+    console.warn("No data to export");
+    return;
+  }
+
+  // Create workbook and worksheet
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+  // Write file
+  XLSX.writeFile(workbook, `${filename}.xlsx`);
+}
+

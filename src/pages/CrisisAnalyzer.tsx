@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Globe, AlertTriangle, Zap, TrendingUp } from 'lucide-react';
+import { Globe, AlertTriangle, Zap, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import DownloadButton from '@/components/DownloadButton';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ const CrisisAnalyzer = () => {
   const [results, setResults] = useState<CrisisResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [showAllIndicators, setShowAllIndicators] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const runAnalysis = async () => {
@@ -241,15 +243,32 @@ const CrisisAnalyzer = () => {
 
             {/* Detailed Results */}
             <div>
-              <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-destructive" />
-                Prediction of{' '}
-                {crisisType === 'economic' ? 'Economic' : 'Food'} Crisis for{' '}
-                {forecastYear}
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Filtered Report: {results.length} Countries with &gt;50% Probability
-              </p>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-destructive" />
+                    Prediction of{' '}
+                    {crisisType === 'economic' ? 'Economic' : 'Food'} Crisis for{' '}
+                    {forecastYear}
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Filtered Report: {results.length} Countries with &gt;50% Probability
+                  </p>
+                </div>
+                <DownloadButton 
+                  data={results.map(r => ({
+                    country: r.country,
+                    probability: r.probability,
+                    classification: r.classification,
+                    ...(r.topIndicators ? {
+                      indicators: r.topIndicators.map(i => i.name).join('; '),
+                      impacts: r.topIndicators.map(i => i.impact).join('; '),
+                      values: r.topIndicators.map(i => i.value).join('; ')
+                    } : {})
+                  }))} 
+                  filename={`crisis-prediction-${crisisType}-${forecastYear}`} 
+                />
+              </div>
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {results.map((result) => (
@@ -304,16 +323,46 @@ const CrisisAnalyzer = () => {
                       {/* Top Indicators */}
                       {result.topIndicators && result.topIndicators.length > 0 && (
                         <div>
-                          <p className="text-sm font-semibold mb-3">
-                            Top 3 Contributing Indicators
-                          </p>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-semibold">
+                              {showAllIndicators[result.country] 
+                                ? `All Contributing Indicators (${result.topIndicators.length})`
+                                : `Top 3 Contributing Indicators`
+                              }
+                            </p>
+                            {result.topIndicators.length > 3 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => setShowAllIndicators(prev => ({
+                                  ...prev,
+                                  [result.country]: !prev[result.country]
+                                }))}
+                              >
+                                {showAllIndicators[result.country] ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    Show Less
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-3 w-3 mr-1" />
+                                    Show More ({result.topIndicators.length - 3} more)
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                           <div className="space-y-3">
-                            {result.topIndicators.map((indicator, idx) => (
+                            {(showAllIndicators[result.country] 
+                              ? result.topIndicators 
+                              : result.topIndicators.slice(0, 3)
+                            ).map((indicator, idx) => (
                               <div key={idx} className="space-y-1">
                                 <div className="flex justify-between text-sm">
                                   <span className="font-medium">
-                                    {idx + 1}. {indicator.name.substring(0, 35)}
-                                    {indicator.name.length > 35 ? '...' : ''}
+                                    {idx + 1}. {indicator.name}
                                   </span>
                                   <span className="text-destructive font-semibold">
                                     {indicator.impact.toFixed(3)}
