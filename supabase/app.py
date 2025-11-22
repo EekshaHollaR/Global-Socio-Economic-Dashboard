@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sys
 import json
-import os
 import numpy as np
 
 # =====================================================================
@@ -83,39 +82,17 @@ def health_check():
     }), 200
 
 # =====================================================================
-# Economic Crisis Endpoint - UPDATED FOR NEW MODEL
+# Economic Crisis Endpoint
 # =====================================================================
-@app.route('/api/analyze/economic', methods=['POST', 'OPTIONS'])
+@app.route('/api/analyze/economic', methods=['POST'])
 def analyze_economic():
-    """
-    Analyze economic crisis using NEW pickle-based model
-    
-    Expected JSON:
-    {
-        "country": "Haiti",
-        "gdpGrowth": -4.17,
-        "inflation": 26.95,
-        "unemployment": 15.06,
-        "domesticCredit": 32.5,
-        "exports": 3.40,
-        "imports": 45.0,
-        "gdpPerCapita": 1234.56,        // NEW - Required
-        "grossFixedCapital": 25.3       // NEW - Required
-    }
-    
-    NOTE: Lag parameters REMOVED - new model doesn't use them
-    """
-    if request.method == 'OPTIONS':
-        return '', 204
-
     try:
         data = request.get_json()
 
-        # Required fields for NEW model
         required_fields = [
             'country', 'gdpGrowth', 'inflation', 'unemployment',
             'domesticCredit', 'exports', 'imports',
-            'gdpPerCapita', 'grossFixedCapital'  # NEW
+            'gdpPerCapita', 'grossFixedCapital'
         ]
 
         missing = [f for f in required_fields if f not in data]
@@ -127,16 +104,6 @@ def analyze_economic():
             }), 400
 
         print(f"\n📊 Analyzing {data['country']} (Economic Crisis - New Model)")
-        print(f"   GDP Growth: {data['gdpGrowth']}")
-        print(f"   Inflation: {data['inflation']}")
-        print(f"   Unemployment: {data['unemployment']}")
-        print(f"   Domestic Credit: {data['domesticCredit']}")
-        print(f"   Exports: {data['exports']}")
-        print(f"   Imports: {data['imports']}")
-        print(f"   GDP Per Capita: {data['gdpPerCapita']}")
-        print(f"   Gross Fixed Capital: {data['grossFixedCapital']}")
-
-        # Call analysis function with NEW parameters
         result = analyze_economic_crisis(
             country=data['country'],
             gdp_growth=float(data['gdpGrowth']),
@@ -151,59 +118,26 @@ def analyze_economic():
 
         result = to_json_serializable(result)
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
-
         return jsonify(result), 200
 
     except ValueError as e:
-        print(f"❌ ValueError: {str(e)}")
-        return jsonify({
-            'error': 'Invalid input values',
-            'message': str(e)
-        }), 400
-
+        return jsonify({'error': 'Invalid input values', 'message': str(e)}), 400
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            'error': 'Analysis failed',
-            'message': str(e)
-        }), 500
+        import traceback; traceback.print_exc()
+        return jsonify({'error': 'Analysis failed', 'message': str(e)}), 500
 
 # =====================================================================
-# Food Crisis Endpoint - UPDATED FOR NEW MODEL
+# Food Crisis Endpoint
 # =====================================================================
-@app.route('/api/analyze/food', methods=['POST', 'OPTIONS'])
+@app.route('/api/analyze/food', methods=['POST'])
 def analyze_food():
-    """
-    Analyze food crisis using NEW pickle-based model
-    
-    Expected JSON:
-    {
-        "country": "Yemen",
-        "cerealYield": 801.1,
-        "foodImports": 18.41,
-        "foodProductionIndex": 89.88,
-        "gdpGrowth": -3.89,
-        "gdpPerCapita": 633.89,
-        "inflation": 13.42,
-        "populationGrowth": 2.98,
-        "gdpCurrent": 26.8e9              // NEW - Required (GDP in current US$)
-    }
-    
-    NOTE: Lag parameters REMOVED - new model doesn't use them
-    """
-    if request.method == 'OPTIONS':
-        return '', 204
-
     try:
         data = request.get_json()
 
-        # Required fields for NEW model
         required_fields = [
             'country', 'cerealYield', 'foodImports', 'foodProductionIndex',
-            'gdpGrowth', 'gdpPerCapita', 'inflation', 'populationGrowth',
-            'gdpCurrent'  # NEW
+            'gdpGrowth', 'gdpPerCapita', 'inflation',
+            'populationGrowth', 'gdpCurrent'
         ]
 
         missing = [f for f in required_fields if f not in data]
@@ -215,16 +149,6 @@ def analyze_food():
             }), 400
 
         print(f"\n🍽️ Analyzing {data['country']} (Food Crisis - New Model)")
-        print(f"   Cereal Yield: {data['cerealYield']}")
-        print(f"   Food Imports: {data['foodImports']}")
-        print(f"   Food Production Index: {data['foodProductionIndex']}")
-        print(f"   GDP Growth: {data['gdpGrowth']}")
-        print(f"   GDP Per Capita: {data['gdpPerCapita']}")
-        print(f"   Inflation: {data['inflation']}")
-        print(f"   Population Growth: {data['populationGrowth']}")
-        print(f"   GDP Current: {data['gdpCurrent']}")
-
-        # Call analysis function with NEW parameters
         result = analyze_food_crisis(
             country=data['country'],
             cereal_yield=float(data['cerealYield']),
@@ -239,24 +163,78 @@ def analyze_food():
 
         result = to_json_serializable(result)
         print(f"   ✅ Result: {result['probability']}% - {result['classification']}\n")
-
         return jsonify(result), 200
 
     except ValueError as e:
-        print(f"❌ ValueError: {str(e)}") 
-        return jsonify({
-            'error': 'Invalid input values',
-            'message': str(e)
-        }), 400
+        return jsonify({'error': 'Invalid input values', 'message': str(e)}), 400
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': 'Analysis failed', 'message': str(e)}), 500
+
+# =====================================================================
+# News API Endpoints
+# =====================================================================
+try:
+    from newsAPI import fetch_crisis_news, fetch_latest_crisis_news
+    print("✅ Successfully imported news API functions")
+except ImportError as e:
+    print(f"⚠️ News API not available: {e}")
+    # Define fallback functions to prevent NameError
+    def fetch_crisis_news(*args, **kwargs):
+        return {'status': 'error', 'message': 'News API module not loaded'}
+    def fetch_latest_crisis_news(*args, **kwargs):
+        return {'status': 'error', 'message': 'News API module not loaded'}
+
+@app.route('/api/news', methods=['GET', 'OPTIONS'])
+def get_crisis_news():
+
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        country = request.args.get('country')
+        crisis_type = request.args.get('type')
+        page_size = request.args.get('pageSize', 20, type=int)
+
+        if not country:
+            return jsonify({'error': 'Missing required parameter', 'message': 'country is required'}), 400
+        if not crisis_type:
+            return jsonify({'error': 'Missing required parameter', 'message': 'type is required'}), 400
+        if crisis_type not in ['economic', 'food']:
+            return jsonify({'error': 'Invalid crisis type', 'message': 'type must be "economic" or "food"'}), 400
+
+        print(f"\n📰 Fetching news: {country} - {crisis_type}")
+        result = fetch_crisis_news(country, crisis_type, page_size)
+
+        return jsonify(result), 200
 
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            'error': 'Analysis failed',
-            'message': str(e)
-        }), 500
+        print(f"❌ Error fetching news: {str(e)}")
+        import traceback; traceback.print_exc()
+        return jsonify({'error': 'Failed to fetch news', 'message': str(e)}), 500
+
+@app.route('/api/news/latest', methods=['GET', 'OPTIONS'])
+def get_latest_news():
+
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        crisis_type = request.args.get('type')
+        page_size = request.args.get('pageSize', 30, type=int)
+
+        if crisis_type and crisis_type not in ['economic', 'food']:
+            return jsonify({'error': 'Invalid crisis type', 'message': 'type must be "economic" or "food"'}), 400
+
+        print(f"\n📰 Fetching latest news: {crisis_type or 'all'}")
+        result = fetch_latest_crisis_news(crisis_type, page_size)
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"❌ Error fetching latest news: {str(e)}")
+        import traceback; traceback.print_exc()
+        return jsonify({'error': 'Failed to fetch news', 'message': str(e)}), 500
 
 # =====================================================================
 # Error Handlers
@@ -273,27 +251,20 @@ def internal_error(error):
 # Main
 # =====================================================================
 if __name__ == '__main__':
-    print("""
+    print(
+"""
 ╔═════════════════════════════════════════════════════════╗
-║   Crisis Analysis API - Pickle-Based Models (NEW)      ║
+║   Crisis Analysis API - Pickle-Based Models (NEW)       ║
 ║   Running on http://localhost:3001                      ║
 ╚═════════════════════════════════════════════════════════╝
 
 📋 IMPORTANT CHANGES:
   • Using NEW pickle-based models (economic_model.pkl, food_model.pkl)
   • Lag parameters REMOVED (models don't use them)
-  • NEW required parameters:
-    - Economic: gdpPerCapita, grossFixedCapital
-    - Food: gdpCurrent
-  • Feature order automatically loaded from pickle
+  • New required input fields for both endpoints
+"""
+    )
 
-Endpoints:
-  POST /api/analyze/economic
-  POST /api/analyze/food
-  GET  /health
-
-Status: ✅ Ready for pickle-based inference
-""")
     app.run(
         host='0.0.0.0',
         port=3001,
