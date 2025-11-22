@@ -81,9 +81,9 @@ graph TD
     D -->|Trained Models| E[Prediction Service]
     
     subgraph Research_Module
-    D -->|Model Artifacts| F[Model Comparison]
-    D -->|Model Artifacts| G[Explainability (SHAP)]
-    D -->|Model Artifacts| H[Stress Testing]
+        D -->|Model Artifacts| F[Model Comparison]
+        D -->|Model Artifacts| G[Explainability (SHAP)]
+        D -->|Model Artifacts| H[Stress Testing]
     end
     
     E -->|JSON Response| I[Frontend Dashboard]
