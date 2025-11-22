@@ -137,45 +137,49 @@ The system follows a **Microservices-inspired Architecture**, separating the fro
 This diagram details the internal components of the Frontend and Backend and their interactions.
 
 ```mermaid
-componentDiagram
-    package "Frontend (React)" {
-        [Dashboard UI]
-        [Crisis Analyzer UI]
-        [News Feed UI]
-        [World Map Component]
-        [Axios Service]
-    }
-    package "Backend (Flask)" {
-        [API Routes]
-        [Crisis Analysis Controller]
-        [News Controller]
-        [ML Model Service]
-        [Data Loader]
-    }
-    package "Research Module (Offline)" {
-        [Model Evaluator]
-        [Explainability Engine]
-        [Stress Tester]
-        [Report Generator]
-    }
-    database "Data Layer" {
-        [CSV Datasets]
-        [Pickle Models]
-    }
+flowchart LR
+    subgraph Frontend (React)
+        DashboardUI[Dashboard UI]
+        CrisisUI[Crisis Analyzer UI]
+        NewsUI[News Feed UI]
+        WorldMap[World Map Component]
+        Axios[Axios Service]
+    end
 
-    [Dashboard UI] --> [Axios Service]
-    [Crisis Analyzer UI] --> [Axios Service]
-    [Axios Service] --> [API Routes] : JSON/HTTP
-    [API Routes] --> [Crisis Analysis Controller]
-    [API Routes] --> [News Controller]
-    [Crisis Analysis Controller] --> [ML Model Service]
-    [ML Model Service] --> [Data Loader]
-    [Data Loader] --> [CSV Datasets]
-    [ML Model Service] --> [Pickle Models]
-    
-    [Model Evaluator] --> [CSV Datasets]
-    [Explainability Engine] --> [Pickle Models]
-    [Report Generator] --> [Model Evaluator]
+    subgraph Backend (Flask)
+        APIRoutes[API Routes]
+        CrisisCtrl[Crisis Analysis Controller]
+        NewsCtrl[News Controller]
+        MLService[ML Model Service]
+        DataLoader[Data Loader]
+    end
+
+    subgraph Research Module (Offline)
+        Evaluator[Model Evaluator]
+        Explain[Explainability Engine]
+        Stress[Stress Tester]
+        ReportGen[Report Generator]
+    end
+
+    subgraph DataLayer["Data Layer (Database)"]
+        CSVDatasets[CSV Datasets]
+        PickleModels[Pickle Models]
+    end
+
+    DashboardUI --> Axios
+    CrisisUI --> Axios
+    Axios -->|JSON/HTTP| APIRoutes
+    APIRoutes --> CrisisCtrl
+    APIRoutes --> NewsCtrl
+    CrisisCtrl --> MLService
+    MLService --> DataLoader
+    DataLoader --> CSVDatasets
+    MLService --> PickleModels
+
+    Evaluator --> CSVDatasets
+    Explain --> PickleModels
+    ReportGen --> Evaluator
+
 ```
 *Fig 1.2: Detailed Component Diagram (Generated using AI tool ChatGPT)*
 
@@ -208,26 +212,30 @@ sequenceDiagram
 This diagram shows the physical deployment architecture of the system.
 
 ```mermaid
-deploymentDiagram
-    node "Client Device" {
-        [Web Browser]
-    }
-    node "Application Server" {
-        component "Flask Backend"
-        component "React Static Files"
-    }
-    node "Data Storage" {
-        database "CSV Files"
-        database "Model Artifacts"
-    }
-    node "External Services" {
-        [News API]
-    }
+flowchart LR
+    subgraph ClientDevice["Client Device"]
+        Browser[Web Browser]
+    end
 
-    [Web Browser] --> [Flask Backend] : HTTPS (Port 443)
-    [Flask Backend] --> [CSV Files] : File I/O
-    [Flask Backend] --> [Model Artifacts] : File I/O
-    [Flask Backend] --> [News API] : REST API Call
+    subgraph AppServer["Application Server"]
+        Flask[Flask Backend]
+        React[React Static Files]
+    end
+
+    subgraph DataStorage["Data Storage"]
+        CSV[CSV Files]
+        Models[Model Artifacts]
+    end
+
+    subgraph ExternalServices["External Services"]
+        NewsAPI[News API]
+    end
+
+    Browser -->|HTTPS (443)| Flask
+    Flask -->|File I/O| CSV
+    Flask -->|File I/O| Models
+    Flask -->|REST API Call| NewsAPI
+
 ```
 *Fig 1.4: Deployment Diagram (Generated using AI tool ChatGPT)*
 
