@@ -82,7 +82,7 @@ graph TD
     
     subgraph Research_Module
         D -->|Model Artifacts| F[Model Comparison]
-        D -->|Model Artifacts| G[Explainability (SHAP)]
+        D -->|Model Artifacts| G["Explainability - SHAP"]
         D -->|Model Artifacts| H[Stress Testing]
     end
     
