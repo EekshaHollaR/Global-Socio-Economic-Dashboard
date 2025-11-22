@@ -1,4 +1,4 @@
-import { Globe, BarChart3, TrendingUp, FileText, Wheat, DollarSign, Activity, AlertTriangle } from "lucide-react";
+import { Globe, BarChart3, TrendingUp, FileText, Wheat, DollarSign, Activity, AlertTriangle, Newspaper } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +22,7 @@ const AppSidebar = () => {
     { path: "/food-analysis", label: "Food", icon: Wheat },
     { path: "/economy-analysis", label: "Economy", icon: DollarSign },
     { path: "/crisis-analyzer", label: "Crisis Analyzer", icon: AlertTriangle },
+    { path: "/latest-news", label: "Latest News", icon: Newspaper },
     { path: "/forecaster", label: "Forecaster", icon: Activity },
     { path: "/reports", label: "Reports", icon: FileText },
   ];
