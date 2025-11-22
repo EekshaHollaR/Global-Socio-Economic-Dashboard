@@ -138,7 +138,7 @@ This diagram details the internal components of the Frontend and Backend and the
 
 ```mermaid
 flowchart LR
-    subgraph Frontend (React)
+    subgraph Frontend["Frontend (React)"]
         DashboardUI[Dashboard UI]
         CrisisUI[Crisis Analyzer UI]
         NewsUI[News Feed UI]
@@ -146,7 +146,7 @@ flowchart LR
         Axios[Axios Service]
     end
 
-    subgraph Backend (Flask)
+    subgraph Backend["Backend (Flask)"]
         APIRoutes[API Routes]
         CrisisCtrl[Crisis Analysis Controller]
         NewsCtrl[News Controller]
@@ -154,7 +154,7 @@ flowchart LR
         DataLoader[Data Loader]
     end
 
-    subgraph Research Module (Offline)
+    subgraph ResearchModule["Research Module (Offline)"]
         Evaluator[Model Evaluator]
         Explain[Explainability Engine]
         Stress[Stress Tester]
@@ -179,6 +179,7 @@ flowchart LR
     Evaluator --> CSVDatasets
     Explain --> PickleModels
     ReportGen --> Evaluator
+
 
 ```
 *Fig 1.2: Detailed Component Diagram (Generated using AI tool ChatGPT)*
@@ -214,27 +215,28 @@ This diagram shows the physical deployment architecture of the system.
 ```mermaid
 flowchart LR
     subgraph ClientDevice["Client Device"]
-        Browser[Web Browser]
+        browser[Web Browser]
     end
 
     subgraph AppServer["Application Server"]
-        Flask[Flask Backend]
-        React[React Static Files]
+        flask_backend[Flask Backend]
+        react_static[React Static Files]
     end
 
     subgraph DataStorage["Data Storage"]
-        CSV[CSV Files]
-        Models[Model Artifacts]
+        csv_files[CSV Files]
+        model_artifacts[Model Artifacts]
     end
 
     subgraph ExternalServices["External Services"]
-        NewsAPI[News API]
+        news_api[News API]
     end
 
-    Browser -->|HTTPS (443)| Flask
-    Flask -->|File I/O| CSV
-    Flask -->|File I/O| Models
-    Flask -->|REST API Call| NewsAPI
+    browser -->|HTTPS (443)| flask_backend
+    flask_backend -->|File I/O| csv_files
+    flask_backend -->|File I/O| model_artifacts
+    flask_backend -->|REST API Call| news_api
+
 
 ```
 *Fig 1.4: Deployment Diagram (Generated using AI tool ChatGPT)*
