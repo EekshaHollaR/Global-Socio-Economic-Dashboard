@@ -22,6 +22,8 @@ import FoodAnalysis from "./pages/FoodAnalysis";
 import EconomyAnalysis from "./pages/EconomyAnalysis";
 import Forecaster from "./pages/Forecaster";
 import NotFound from "./pages/NotFound";
+import NewsPage from "./pages/NewsPage";
+import LatestNews from "./pages/LatestNews";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ const App = () => (
                             <Route path="/economy-analysis" element={<EconomyAnalysis />} />
                             <Route path="/forecaster" element={<Forecaster />} />
                             <Route path="/reports" element={<Reports />} />
+                            <Route path="/news/:country/:type" element={<NewsPage />} />
+                            <Route path="/latest-news" element={<LatestNews />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>

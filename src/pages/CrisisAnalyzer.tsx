@@ -1,10 +1,10 @@
-'use client';
-
 import { useState } from 'react';
-import { Globe, AlertTriangle, Zap, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Globe, AlertTriangle, Zap, TrendingUp, ChevronDown, ChevronUp, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DownloadButton from '@/components/DownloadButton';
+import PDFReportButton from '@/components/PDFReportButton';
 import {
   Select,
   SelectContent,
@@ -15,12 +15,12 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataLoader } from '@/lib/dataLoader';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  analyzeEconomicCrisis, 
-  analyzeFoodCrisis, 
+import {
+  analyzeEconomicCrisis,
+  analyzeFoodCrisis,
   type CrisisResult,
   type EconomicInput,
-  type FoodInput 
+  type FoodInput
 } from '@/lib/crisisAnalysis';
 
 const CrisisAnalyzer = () => {
@@ -31,6 +31,7 @@ const CrisisAnalyzer = () => {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [showAllIndicators, setShowAllIndicators] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -71,7 +72,7 @@ const CrisisAnalyzer = () => {
             };
 
             result = await analyzeEconomicCrisis(country, economicInput);
-            
+
           } else {
             // ✅ UPDATED: Added NEW required parameter gdpCurrent for pickle model
             // Food model needs: cerealYield, foodImports, foodProductionIndex,
@@ -185,8 +186,8 @@ const CrisisAnalyzer = () => {
               className="px-8"
             >
               <Zap className="mr-2 h-4 w-4" />
-              {loading 
-                ? `Analyzing... ${progress.current}/${progress.total}` 
+              {loading
+                ? `Analyzing... ${progress.current}/${progress.total}`
                 : 'Run Crisis Prediction Analysis'
               }
             </Button>
@@ -222,7 +223,7 @@ const CrisisAnalyzer = () => {
                       🚨 High-Risk Alert for {forecastYear}
                     </h2>
                     <p className="text-muted-foreground mb-4">
-                      The following countries show a significant 
+                      The following countries show a significant
                       {crisisType === 'economic' ? ' economic' : ' food'} crisis probability (
                       &gt;50%) and require close monitoring.
                     </p>
@@ -255,30 +256,35 @@ const CrisisAnalyzer = () => {
                     Filtered Report: {results.length} Countries with &gt;50% Probability
                   </p>
                 </div>
-                <DownloadButton 
-                  data={results.map(r => ({
-                    country: r.country,
-                    probability: r.probability,
-                    classification: r.classification,
-                    ...(r.topIndicators ? {
-                      indicators: r.topIndicators.map(i => i.name).join('; '),
-                      impacts: r.topIndicators.map(i => i.impact).join('; '),
-                      values: r.topIndicators.map(i => i.value).join('; ')
-                    } : {})
-                  }))} 
-                  filename={`crisis-prediction-${crisisType}-${forecastYear}`} 
-                />
+                <div className="flex gap-2">
+                  <DownloadButton
+                    data={results.map(r => ({
+                      country: r.country,
+                      probability: r.probability,
+                      classification: r.classification,
+                      ...(r.topIndicators ? {
+                        indicators: r.topIndicators.map(i => i.name).join('; '),
+                        impacts: r.topIndicators.map(i => i.impact).join('; '),
+                        values: r.topIndicators.map(i => i.value).join('; ')
+                      } : {})
+                    }))}
+                    filename={`crisis-prediction-${crisisType}-${forecastYear}`}
+                  />
+                  <PDFReportButton
+                    results={results}
+                    crisisType={crisisType}
+                  />
+                </div>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {results.map((result) => (
-                  <Card 
-                    key={result.country} 
-                    className={`border-2 transition-all ${
-                      result.probability > 80 
-                        ? 'border-destructive bg-destructive/5' 
-                        : 'border-border/50 hover:border-destructive/50'
-                    }`}
+                  <Card
+                    key={result.country}
+                    className={`border-2 transition-all ${result.probability > 80
+                      ? 'border-destructive bg-destructive/5'
+                      : 'border-border/50 hover:border-destructive/50'
+                      }`}
                   >
                     <CardContent className="pt-6">
                       {/* Country Header */}
@@ -292,11 +298,10 @@ const CrisisAnalyzer = () => {
                         <p className="text-sm text-muted-foreground mb-2">
                           Crisis Probability
                         </p>
-                        <p className={`text-5xl font-bold ${
-                          result.probability > 80 
-                            ? 'text-destructive' 
-                            : 'text-orange-500'
-                        }`}>
+                        <p className={`text-5xl font-bold ${result.probability > 80
+                          ? 'text-destructive'
+                          : 'text-orange-500'
+                          }`}>
                           {result.probability.toFixed(2)}%
                         </p>
                         <p className="text-sm font-semibold text-muted-foreground mt-2">
@@ -308,13 +313,12 @@ const CrisisAnalyzer = () => {
                       <div className="mb-6">
                         <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                           <div
-                            className={`h-full transition-all ${
-                              result.probability > 80
-                                ? 'bg-destructive'
-                                : result.probability > 65
+                            className={`h-full transition-all ${result.probability > 80
+                              ? 'bg-destructive'
+                              : result.probability > 65
                                 ? 'bg-orange-500'
                                 : 'bg-yellow-500'
-                            }`}
+                              }`}
                             style={{ width: `${result.probability}%` }}
                           />
                         </div>
@@ -325,7 +329,7 @@ const CrisisAnalyzer = () => {
                         <div>
                           <div className="flex items-center justify-between mb-3">
                             <p className="text-sm font-semibold">
-                              {showAllIndicators[result.country] 
+                              {showAllIndicators[result.country]
                                 ? `All Contributing Indicators (${result.topIndicators.length})`
                                 : `Top 3 Contributing Indicators`
                               }
@@ -355,8 +359,8 @@ const CrisisAnalyzer = () => {
                             )}
                           </div>
                           <div className="space-y-3">
-                            {(showAllIndicators[result.country] 
-                              ? result.topIndicators 
+                            {(showAllIndicators[result.country]
+                              ? result.topIndicators
                               : result.topIndicators.slice(0, 3)
                             ).map((indicator, idx) => (
                               <div key={idx} className="space-y-1">
@@ -378,8 +382,8 @@ const CrisisAnalyzer = () => {
                                 <div className="w-full bg-muted rounded h-1 overflow-hidden">
                                   <div
                                     className="bg-destructive/70 h-full"
-                                    style={{ 
-                                      width: `${Math.min(Math.abs(indicator.impact) * 100, 100)}%` 
+                                    style={{
+                                      width: `${Math.min(Math.abs(indicator.impact) * 100, 100)}%`
                                     }}
                                   />
                                 </div>
@@ -388,6 +392,19 @@ const CrisisAnalyzer = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* View Related News Button */}
+                      <div className="mt-6">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2"
+                          onClick={() => navigate(`/news/${result.country}/${crisisType}`)}
+                        >
+                          <Newspaper className="h-4 w-4" />
+                          View Related News
+                        </Button>
+                      </div>
 
                       {/* Debug Info (optional - comment out for production) */}
                       <div className="mt-4 pt-4 border-t border-muted text-xs text-muted-foreground">
