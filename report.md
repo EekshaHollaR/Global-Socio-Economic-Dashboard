@@ -131,43 +131,105 @@ The system follows a **Microservices-inspired Architecture**, separating the fro
 *   **Data Storage**: CSV/Pickle (Prototype), PostgreSQL (Production target)
 *   **Reporting**: FPDF for automated PDF generation
 
-### **Architecture Diagram**
+### **Detailed Architecture Diagrams**
+
+#### **1. Component Diagram**
+This diagram details the internal components of the Frontend and Backend and their interactions.
 
 ```mermaid
-classDiagram
-    class Frontend {
-        +React App
-        +Recharts
-        +Axios
+componentDiagram
+    package "Frontend (React)" {
+        [Dashboard UI]
+        [Crisis Analyzer UI]
+        [News Feed UI]
+        [World Map Component]
+        [Axios Service]
     }
-    class BackendAPI {
-        +Flask Server
-        +Routes
-        +JSON Serializer
+    package "Backend (Flask)" {
+        [API Routes]
+        [Crisis Analysis Controller]
+        [News Controller]
+        [ML Model Service]
+        [Data Loader]
     }
-    class ML_Engine {
-        +Prediction Service
-        +Model Loader
-        +Risk Calculator
+    package "Research Module (Offline)" {
+        [Model Evaluator]
+        [Explainability Engine]
+        [Stress Tester]
+        [Report Generator]
     }
-    class Research_Module {
-        +Evaluator
-        +Explainability
-        +StressTester
-        +ReportGenerator
-    }
-    class Data_Layer {
-        +CSV Files
-        +Pickle Models
+    database "Data Layer" {
+        [CSV Datasets]
+        [Pickle Models]
     }
 
-    Frontend --> BackendAPI : HTTP Requests
-    BackendAPI --> ML_Engine : Invoke
-    ML_Engine --> Data_Layer : Read Models/Data
-    Research_Module --> Data_Layer : Read Data
-    Research_Module --> ML_Engine : Use Models
+    [Dashboard UI] --> [Axios Service]
+    [Crisis Analyzer UI] --> [Axios Service]
+    [Axios Service] --> [API Routes] : JSON/HTTP
+    [API Routes] --> [Crisis Analysis Controller]
+    [API Routes] --> [News Controller]
+    [Crisis Analysis Controller] --> [ML Model Service]
+    [ML Model Service] --> [Data Loader]
+    [Data Loader] --> [CSV Datasets]
+    [ML Model Service] --> [Pickle Models]
+    
+    [Model Evaluator] --> [CSV Datasets]
+    [Explainability Engine] --> [Pickle Models]
+    [Report Generator] --> [Model Evaluator]
 ```
-*Fig 1.2: System Class Architecture (Generated using AI tool ChatGPT)*
+*Fig 1.2: Detailed Component Diagram (Generated using AI tool ChatGPT)*
+
+#### **2. Sequence Diagram: Crisis Analysis Flow**
+This diagram illustrates the sequence of operations when a user requests a crisis analysis.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend as React Frontend
+    participant API as Flask API
+    participant Model as ML Service
+    participant Data as Data Layer
+
+    User->>Frontend: Selects Country & Indicators
+    Frontend->>Frontend: Validates Input
+    Frontend->>API: POST /api/analyze/economic (JSON)
+    API->>Model: analyze_economic_crisis(data)
+    Model->>Data: Load Economic Model (Pickle)
+    Data-->>Model: Model Object
+    Model->>Model: Preprocess & Predict Prob.
+    Model->>Model: Calculate SHAP Values
+    Model-->>API: Result {risk: "High", prob: 85%}
+    API-->>Frontend: JSON Response
+    Frontend->>User: Display Risk Score & Charts
+```
+*Fig 1.3: Sequence Diagram for Analysis Request (Generated using AI tool ChatGPT)*
+
+#### **3. Deployment Diagram**
+This diagram shows the physical deployment architecture of the system.
+
+```mermaid
+deploymentDiagram
+    node "Client Device" {
+        [Web Browser]
+    }
+    node "Application Server" {
+        component "Flask Backend"
+        component "React Static Files"
+    }
+    node "Data Storage" {
+        database "CSV Files"
+        database "Model Artifacts"
+    }
+    node "External Services" {
+        [News API]
+    }
+
+    [Web Browser] --> [Flask Backend] : HTTPS (Port 443)
+    [Flask Backend] --> [CSV Files] : File I/O
+    [Flask Backend] --> [Model Artifacts] : File I/O
+    [Flask Backend] --> [News API] : REST API Call
+```
+*Fig 1.4: Deployment Diagram (Generated using AI tool ChatGPT)*
 
 ### **Mathematical Framework**
 The core of the predictive engine relies on minimizing the loss function.
