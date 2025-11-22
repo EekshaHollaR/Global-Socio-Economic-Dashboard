@@ -161,9 +161,58 @@ const Dashboard = () => {
           />
         </section>
 
-        {/* World Map Section */}
+        {/* Global Crisis Risk Map */}
         <section>
-          <WorldMap highlightedCountries={countries.slice(0, 20)} />
+          <WorldMap
+            highlightedCountries={[]}
+            countryRiskData={(() => {
+              // Calculate risk scores for all countries
+              const latestYear = Math.max(...foodData.map(d => d.year));
+              const latestData = foodData.filter(d => d.year === latestYear);
+              const riskMap: Record<string, number> = {};
+
+              latestData.forEach(row => {
+                let risk = 0;
+                let factors = 0;
+
+                // GDP risk
+                if (row.gdpGrowth !== undefined && !isNaN(row.gdpGrowth)) {
+                  factors++;
+                  if (row.gdpGrowth < -3) risk += 30;
+                  else if (row.gdpGrowth < 0) risk += 15;
+                  else if (row.gdpGrowth < 2) risk += 10;
+                }
+
+                // Inflation risk
+                if (row.inflation !== undefined && !isNaN(row.inflation)) {
+                  factors++;
+                  if (row.inflation > 20) risk += 25;
+                  else if (row.inflation > 10) risk += 15;
+                  else if (row.inflation > 5) risk += 5;
+                }
+
+                // Unemployment risk
+                if (row.unemployment !== undefined && !isNaN(row.unemployment)) {
+                  factors++;
+                  if (row.unemployment > 20) risk += 20;
+                  else if (row.unemployment > 10) risk += 10;
+                  else if (row.unemployment > 7) risk += 5;
+                }
+
+                // Food production risk
+                if (row.foodProductionIndex !== undefined && !isNaN(row.foodProductionIndex)) {
+                  factors++;
+                  if (row.foodProductionIndex < 80) risk += 20;
+                  else if (row.foodProductionIndex < 90) risk += 10;
+                  else if (row.foodProductionIndex < 95) risk += 5;
+                }
+
+                riskMap[row.countryName] = factors > 0 ? Math.min(100, risk) : 50;
+              });
+
+              return riskMap;
+            })()}
+          />
         </section>
 
         {/* Alerts Section */}

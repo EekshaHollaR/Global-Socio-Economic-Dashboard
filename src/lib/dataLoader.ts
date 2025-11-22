@@ -13,7 +13,7 @@ export class DataLoader {
     try {
       const response = await fetch("/data/economic_dataset.csv");
       const text = await response.text();
-      
+
       return new Promise((resolve) => {
         Papa.parse(text, {
           header: true,
@@ -81,7 +81,7 @@ export class DataLoader {
     return economic.map((eRow: any) => {
       const key = `${eRow["Country Name"]}-${eRow["Date"]}`;
       const fRow = foodMap.get(key) || {};
-      
+
       return {
         countryName: eRow["Country Name"],
         year: eRow["Date"],
@@ -126,6 +126,7 @@ export class DataLoader {
         latestData,
         historicalFood: countryData,
         historicalIndicators: countryData,
+        historicalEconomic: countryData,
       };
     } catch (error) {
       console.error(`Error loading data for ${countryName}:`, error);

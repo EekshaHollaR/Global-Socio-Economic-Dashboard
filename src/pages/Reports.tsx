@@ -21,6 +21,10 @@ const Reports = () => {
   const [foodData, setFoodData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState('Haiti');
+  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedCrisisType, setSelectedCrisisType] = useState<'economic' | 'food'>('economic');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,12 +34,17 @@ const Reports = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [economic, food] = await Promise.all([
+      const [economic, food, countryList] = await Promise.all([
         DataLoader.loadEconomicData(),
         DataLoader.loadFoodData(),
+        DataLoader.getCountries()
       ]);
       setEconomicData(economic);
       setFoodData(food);
+      setCountries(countryList);
+      if (countryList.length > 0 && !countryList.includes(selectedCountry)) {
+        setSelectedCountry(countryList[0]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -48,28 +57,58 @@ const Reports = () => {
     }
   };
 
-  const handleQuickExport = (dataType: 'economic' | 'food', format: 'csv' | 'excel') => {
+  const handleQuickExport = async (type: 'economic' | 'food', format: 'excel' | 'csv') => {
     try {
-      const data = dataType === 'economic' ? economicData : foodData;
-      const filename = `${dataType}_data_fullset`;
+      setLoading(true);
+      const data = type === 'economic' ? economicData : foodData;
+      const filename = `${type}_data_${new Date().toISOString().split('T')[0]}`;
 
-      if (format === 'csv') {
-        exportToCSV(data, filename);
-      } else {
+      if (format === 'excel') {
         exportToXLSX(data, filename);
+      } else {
+        exportToCSV(data, filename);
       }
 
       toast({
         title: 'Export Successful',
-        description: `${dataType.charAt(0).toUpperCase() + dataType.slice(1)} data exported as ${format.toUpperCase()}`,
+        description: `${type === 'economic' ? 'Economic' : 'Food'} data exported as ${format.toUpperCase()}`,
       });
     } catch (error) {
-      console.error('Export error:', error);
       toast({
         title: 'Export Failed',
-        description: 'Failed to export data. Please try again.',
+        description: 'An error occurred during export',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkExport = async (format: 'excel' | 'csv') => {
+    try {
+      setLoading(true);
+      const combinedData = await DataLoader.getCombinedData();
+      const filename = `complete_dataset_all_countries_${new Date().toISOString().split('T')[0]}`;
+
+      if (format === 'excel') {
+        exportToXLSX(combinedData, filename);
+      } else {
+        exportToCSV(combinedData, filename);
+      }
+
+      toast({
+        title: 'Bulk Export Successful',
+        description: `Complete dataset for ${combinedData.length} records exported successfully!`,
+      });
+    } catch (error) {
+      console.error('Bulk export error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export complete dataset',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -161,48 +200,178 @@ const Reports = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                <div>
-                  <p className="font-semibold">Indicators:</p>
-                  <ul className="list-disc list-inside text-xs mt-1 space-y-1">
-                    <li>Cereal Yield</li>
-                    <li>Food Imports</li>
-                    <li>Production Index</li>
-                    <li>Population Growth</li>
-                  </ul>
-                </div>
-                <div>
-                  <p className="font-semibold">Coverage:</p>
-                  <ul className="list-disc list-inside text-xs mt-1 space-y-1">
-                    <li>190+ Countries</li>
-                    <li>25 Years (2000-2024)</li>
-                    <li>8 Key Metrics</li>
-                  </ul>
-                </div>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• Indicators: Yield, Imports, Production, etc.</p>
+                <p>• Coverage: 190+ Countries (2000-2024)</p>
               </div>
-
-              <div className="space-y-2">
+              <div className="flex gap-2">
                 <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => handleQuickExport('food', 'excel')}
-                  disabled={loading || foodData.length === 0}
+                  disabled={loading}
                 >
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Download as Excel (.xlsx)
+                  <Download className="mr-2 h-4 w-4" />
+                  Excel
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full"
                   onClick={() => handleQuickExport('food', 'csv')}
-                  disabled={loading || foodData.length === 0}
+                  disabled={loading}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download as CSV
+                  CSV
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Detailed Report Section */}
+        <section className="mt-12">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <FileBarChart className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Download Detailed Crisis Report</h2>
+              <p className="text-muted-foreground">
+                Generate a comprehensive 10-12 page PDF report with in-depth analysis and visualizations
+              </p>
+            </div>
+          </div>
+
+          <Card className="bg-muted/30">
+            <CardContent className="p-8">
+              <div className="grid gap-8 md:grid-cols-3">
+                <div className="space-y-4">
+                  <Label>Select Country</Label>
+                  <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {countries.map(country => (
+                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Analysis Year</Label>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2023">2023</SelectItem>
+                      <SelectItem value="2022">2022</SelectItem>
+                      <SelectItem value="2021">2021</SelectItem>
+                      <SelectItem value="2020">2020</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Crisis Type</Label>
+                  <RadioGroup value={selectedCrisisType} onValueChange={(val) => setSelectedCrisisType(val as 'economic' | 'food')} className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="economic" id="r-econ" />
+                      <Label htmlFor="r-econ">Economic</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="food" id="r-food" />
+                      <Label htmlFor="r-food">Food Security</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <Button
+                  size="lg"
+                  className="w-full md:w-auto min-w-[200px]"
+                  disabled={loading || !selectedCountry}
+                  onClick={async () => {
+                    try {
+                      const { generateDetailedReport } = await import('@/lib/detailedPdfGenerator');
+                      await generateDetailedReport(selectedCountry, selectedYear, selectedCrisisType);
+                      toast({
+                        title: "Report Generated",
+                        description: `Detailed PDF report for ${selectedCountry} has been downloaded.`,
+                      });
+                    } catch (error) {
+                      console.error('PDF Error:', error);
+                      toast({
+                        title: "Generation Failed",
+                        description: error instanceof Error ? error.message : "Could not generate PDF report.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  Generate Detailed Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Bulk Download Section */}
+        <section className="mt-12">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
+              <Download className="h-6 w-6 text-success" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Download Complete Dataset</h2>
+              <p className="text-muted-foreground">
+                Export the entire database covering all 190+ countries (2000-2024)
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-8">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <h3 className="font-semibold mb-2">Dataset Includes:</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• All 12 economic & food security indicators</li>
+                    <li>• 190+ countries</li>
+                    <li>• 25 years of historical data (2000-2024)</li>
+                    <li>• ~{economicData.length.toLocaleString()} total records</li>
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => handleBulkExport('excel')}
+                    disabled={loading}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <FileSpreadsheet className="mr-2 h-5 w-5" />
+                    Download Complete Dataset (Excel)
+                  </Button>
+                  <Button
+                    onClick={() => handleBulkExport('csv')}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <FileText className="mr-2 h-5 w-5" />
+                    Download Complete Dataset (CSV)
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Custom Export Section */}
         <Card>
@@ -296,7 +465,7 @@ const Reports = () => {
         onOpenChange={setShowExportModal}
         data={[...economicData, ...foodData]}
       />
-    </div>
+    </div >
   );
 };
 

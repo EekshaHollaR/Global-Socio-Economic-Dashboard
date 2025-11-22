@@ -31,6 +31,7 @@ export interface CountryData {
   latestData: any;
   historicalFood: any[];
   historicalIndicators: any[];
+  historicalEconomic: any[];
 }
 
 export interface DataStats {

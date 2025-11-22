@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
 import type { CountryData } from "@/types/data";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
+} from 'recharts';
 
 const Countries = () => {
   const location = useLocation();
@@ -19,10 +22,10 @@ const Countries = () => {
     const loadCountries = async () => {
       const list = await DataLoader.getCountries();
       setCountries(list);
-      
+
       // Check if a country was passed via navigation state
       const stateCountry = (location.state as { selectedCountry?: string })?.selectedCountry;
-      
+
       if (stateCountry && list.includes(stateCountry)) {
         setSelectedCountry(stateCountry);
       } else if (list.length > 0) {
@@ -165,23 +168,58 @@ const Countries = () => {
                   </CardContent>
                 </Card>
 
+                {/* Historical Economic Trends */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Historical Data</CardTitle>
+                    <CardTitle>Economic Trends (2000-2024)</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Total records: {countryData?.historicalFood.length} data points available
-                    </p>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={countryData.historicalEconomic}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="year" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="gdpGrowth" stroke="#2563eb" name="GDP Growth %" />
+                          <Line type="monotone" dataKey="inflation" stroke="#dc2626" name="Inflation %" />
+                          <Line type="monotone" dataKey="unemployment" stroke="#16a34a" name="Unemployment %" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Historical Food Security Trends */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Food Security Trends (2000-2024)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={countryData.historicalFood}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="year" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Area type="monotone" dataKey="foodProductionIndex" stackId="1" stroke="#ea580c" fill="#ea580c" name="Food Prod. Index" />
+                          <Area type="monotone" dataKey="cerealYield" stackId="2" stroke="#ca8a04" fill="#ca8a04" name="Cereal Yield (kg/ha)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               </>
             ) : (
               <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {loading ? "Loading..." : "Select a country to view data"}
-                  </p>
+                <CardHeader>
+                  <CardTitle className="text-2xl">{selectedCountry}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">No data available for this country.</p>
                 </CardContent>
               </Card>
             )}

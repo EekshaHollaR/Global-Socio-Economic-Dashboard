@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, AlertTriangle, Zap, TrendingUp, ChevronDown, ChevronUp, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,34 @@ const CrisisAnalyzer = () => {
   const [showAllIndicators, setShowAllIndicators] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Load results from sessionStorage on mount
+  useEffect(() => {
+    const savedResults = sessionStorage.getItem('crisisAnalysisResults');
+    if (savedResults) {
+      try {
+        setResults(JSON.parse(savedResults));
+      } catch (e) {
+        console.error('Failed to parse saved results', e);
+      }
+    }
+  }, []);
+
+  // Save results to sessionStorage whenever they change
+  useEffect(() => {
+    if (results.length > 0) {
+      sessionStorage.setItem('crisisAnalysisResults', JSON.stringify(results));
+    }
+  }, [results]);
+
+  const clearResults = () => {
+    setResults([]);
+    sessionStorage.removeItem('crisisAnalysisResults');
+    toast({
+      title: "Results Cleared",
+      description: "Analysis results have been reset.",
+    });
+  };
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -160,7 +188,7 @@ const CrisisAnalyzer = () => {
             <Tabs
               value={crisisType}
               onValueChange={(v) => setCrisisType(v as 'economic' | 'food')}
-              disabled={loading}
+              className="w-full"
             >
               <TabsList>
                 <TabsTrigger value="economic">Economic Crisis</TabsTrigger>
@@ -182,15 +210,30 @@ const CrisisAnalyzer = () => {
             <Button
               onClick={runAnalysis}
               disabled={loading}
-              size="lg"
-              className="px-8"
+              className="w-full md:w-auto"
             >
-              <Zap className="mr-2 h-4 w-4" />
-              {loading
-                ? `Analyzing... ${progress.current}/${progress.total}`
-                : 'Run Crisis Prediction Analysis'
-              }
+              {loading ? (
+                <>
+                  <Zap className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Run Analysis
+                </>
+              )}
             </Button>
+
+            {results.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={clearResults}
+                disabled={loading}
+              >
+                Clear Results
+              </Button>
+            )}
 
             {/* Progress Bar */}
             {loading && progress.total > 0 && (
