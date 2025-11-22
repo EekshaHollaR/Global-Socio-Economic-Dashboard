@@ -232,12 +232,10 @@ flowchart LR
         news_api[News API]
     end
 
-    browser -->|HTTPS (443)| flask_backend
-    flask_backend -->|File I/O| csv_files
-    flask_backend -->|File I/O| model_artifacts
-    flask_backend -->|REST API Call| news_api
-
-
+    browser -->|HTTPS port 443| flask_backend
+    flask_backend -->|File IO| csv_files
+    flask_backend -->|File IO| model_artifacts
+    flask_backend -->|REST API call| news_api
 ```
 *Fig 1.4: Deployment Diagram (Generated using AI tool ChatGPT)*
 
