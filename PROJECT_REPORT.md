@@ -45,13 +45,13 @@ The application follows a modern Single Page Application (SPA) architecture, ens
 
 ```mermaid
 graph TD;
-    User[User] -->|Interacts| UI[Frontend (React + Vite)];
-    UI -->|Requests Data| API[Supabase Client];
-    UI -->|Executes ML| Py[Python Shell / Pyodide];
-    API -->|Queries| DB[(Supabase Database)];
-    DB -->|Returns Data| API;
-    UI -->|Visualizes| Maps[React Simple Maps];
-    UI -->|Visualizes| Charts[Recharts];
+    User[User] -->|Interacts| UI["Frontend (React + Vite)"]
+    UI -->|Requests Data| API["Supabase Client"]
+    UI -->|Executes ML| Py["Python Shell / Pyodide"]
+    API -->|Queries| DB[(Supabase Database)]
+    DB -->|Returns Data| API
+    UI -->|Visualizes| Maps["React Simple Maps"]
+    UI -->|Visualizes| Charts["Recharts"]
 ```
 
 ### 3.2 User Flow
