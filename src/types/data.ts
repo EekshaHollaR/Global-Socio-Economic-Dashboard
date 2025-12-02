@@ -10,6 +10,7 @@ export interface FoodDataRow {
   gdpPerCapita?: number;
   inflation?: number;
   populationGrowth?: number;
+  unemployment?: number;
 }
 
 export interface WorldIndicatorRow {

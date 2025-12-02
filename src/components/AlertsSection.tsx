@@ -1,7 +1,10 @@
-import { AlertTriangle, TrendingDown, AlertCircle } from "lucide-react";
+import { AlertTriangle, TrendingDown, AlertCircle, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import type { FoodDataRow } from "@/types/data";
+import type { CrisisResult } from "@/lib/crisisAnalysis";
 
 interface Alert {
   id: string;
@@ -10,6 +13,7 @@ interface Alert {
   title: string;
   description: string;
   value?: number;
+  source: "model" | "static";
 }
 
 interface AlertsSectionProps {
@@ -17,7 +21,30 @@ interface AlertsSectionProps {
 }
 
 const AlertsSection = ({ foodData }: AlertsSectionProps) => {
-  const generateAlerts = (): Alert[] => {
+  const getModelAlerts = (): Alert[] => {
+    try {
+      const savedResults = sessionStorage.getItem('crisisAnalysisResults');
+      if (!savedResults) return [];
+
+      const results: CrisisResult[] = JSON.parse(savedResults);
+      const highRisk = results.filter(r => r.probability > 50);
+
+      return highRisk.map(r => ({
+        id: `model-${r.country}`,
+        country: r.country,
+        type: r.probability > 80 ? "danger" : "warning",
+        title: r.probability > 80 ? "Critical Crisis Risk" : "High Crisis Risk",
+        description: `Model predicts ${r.probability.toFixed(1)}% probability of ${r.classification.toLowerCase()}.`,
+        value: r.probability,
+        source: "model"
+      }));
+    } catch (e) {
+      console.error("Failed to load model alerts", e);
+      return [];
+    }
+  };
+
+  const generateStaticAlerts = (): Alert[] => {
     const alerts: Alert[] = [];
     const latestYear = Math.max(...foodData.map((d) => d.year));
     const latestData = foodData.filter((d) => d.year === latestYear);
@@ -32,6 +59,7 @@ const AlertsSection = ({ foodData }: AlertsSectionProps) => {
           title: "Severe Economic Decline",
           description: `GDP growth is ${row.gdpGrowth.toFixed(2)}%, indicating economic recession`,
           value: row.gdpGrowth,
+          source: "static"
         });
       } else if (row.gdpGrowth !== undefined && row.gdpGrowth < 0) {
         alerts.push({
@@ -41,6 +69,7 @@ const AlertsSection = ({ foodData }: AlertsSectionProps) => {
           title: "Negative GDP Growth",
           description: `GDP growth is ${row.gdpGrowth.toFixed(2)}%`,
           value: row.gdpGrowth,
+          source: "static"
         });
       }
     });
@@ -55,6 +84,7 @@ const AlertsSection = ({ foodData }: AlertsSectionProps) => {
           title: "Low Food Production",
           description: `Food production index at ${row.foodProductionIndex.toFixed(1)}, below baseline`,
           value: row.foodProductionIndex,
+          source: "static"
         });
       }
     });
@@ -69,17 +99,23 @@ const AlertsSection = ({ foodData }: AlertsSectionProps) => {
           title: "High Inflation",
           description: `Inflation rate at ${row.inflation.toFixed(2)}%`,
           value: row.inflation,
+          source: "static"
         });
       }
     });
 
-    return alerts.sort((a, b) => {
-      const priority = { danger: 0, warning: 1, info: 2 };
-      return priority[a.type] - priority[b.type];
-    });
+    return alerts;
   };
 
-  const alerts = generateAlerts();
+  const modelAlerts = getModelAlerts();
+  // If we have model alerts, use them. Otherwise fallback to static alerts.
+  const alerts = modelAlerts.length > 0 ? modelAlerts : generateStaticAlerts();
+
+  // Sort by priority
+  const sortedAlerts = alerts.sort((a, b) => {
+    const priority = { danger: 0, warning: 1, info: 2 };
+    return priority[a.type] - priority[b.type];
+  });
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -106,22 +142,41 @@ const AlertsSection = ({ foodData }: AlertsSectionProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          Risk Alerts & Warnings
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {alerts.length} active alerts detected based on latest data
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Risk Alerts & Warnings
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {modelAlerts.length > 0
+                ? "Based on latest AI Model Predictions"
+                : "Based on static historical data thresholds"}
+            </p>
+          </div>
+          {modelAlerts.length === 0 && (
+            <Link to="/crisis-analyzer">
+              <Button size="sm" variant="outline" className="gap-2">
+                <Zap className="h-4 w-4" />
+                Run AI Analysis
+              </Button>
+            </Link>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {alerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No significant risks detected in the current data.
-            </p>
+          {sortedAlerts.length === 0 ? (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                No significant risks detected in the current data.
+              </p>
+              <Link to="/crisis-analyzer">
+                <Button variant="secondary">Run New Analysis</Button>
+              </Link>
+            </div>
           ) : (
-            alerts.slice(0, 10).map((alert) => (
+            sortedAlerts.slice(0, 10).map((alert) => (
               <div
                 key={alert.id}
                 className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"

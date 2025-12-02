@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
 import type { CountryData } from "@/types/data";
+import DownloadButton from "@/components/DownloadButton";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
@@ -109,10 +110,22 @@ const Countries = () => {
               <>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-2xl">{selectedCountry}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Latest Data: {latestData.year}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-2xl">{selectedCountry}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Latest Data: {latestData.year}
+                        </p>
+                      </div>
+                      <DownloadButton
+                        data={[
+                          ...(countryData.historicalEconomic || []).map(d => ({ ...d, type: 'Economic' })),
+                          ...(countryData.historicalFood || []).map(d => ({ ...d, type: 'Food' }))
+                        ]}
+                        filename={`${selectedCountry}-data`}
+                        country={selectedCountry}
+                      />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-4 md:grid-cols-2">

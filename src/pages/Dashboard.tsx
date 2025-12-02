@@ -20,6 +20,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import MultiCountryFilter from "@/components/MultiCountryFilter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { FoodDataRow } from "@/types/data";
 
 const Dashboard = () => {
@@ -28,6 +36,8 @@ const Dashboard = () => {
   const [foodData, setFoodData] = useState<FoodDataRow[]>([]);
   const [yearRange, setYearRange] = useState({ min: 0, max: 0 });
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>("2024");
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -92,7 +102,11 @@ const Dashboard = () => {
 
   // Recent data sample
   const recentData = foodData
-    .filter((row) => row.year === 2023)
+    .filter((row) => {
+      const yearMatch = row.year === parseInt(selectedYear);
+      const countryMatch = selectedCountries.length === 0 || selectedCountries.includes(row.countryName);
+      return yearMatch && countryMatch;
+    })
     .slice(0, 10)
     .map((row) => ({
       country: row.countryName,
@@ -316,8 +330,30 @@ const Dashboard = () => {
         </section>
 
         {/* Recent Data Table */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+          <h2 className="text-xl font-bold">Recent Country Data ({selectedYear})</h2>
+          <div className="flex gap-2 items-center">
+            <MultiCountryFilter
+              countries={uniqueCountries}
+              selectedCountries={selectedCountries}
+              onChange={setSelectedCountries}
+            />
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 6 }, (_, i) => 2020 + i).map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <DataTable
-          title="Recent Country Data (2023)"
+          title=""
           columns={[
             { key: "country", label: "Country" },
             { key: "year", label: "Year" },
