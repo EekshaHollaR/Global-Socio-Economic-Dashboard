@@ -186,23 +186,24 @@ The following diagram illustrates the data flow from the user interface to the A
 ```mermaid
 graph TD;
     subgraph Frontend
-        UI[User Interface] -->|Input Data| State[React State]
-        State -->|JSON Request| API_Client[Axios/Fetch]
+        UI["User Interface"] -->|Input Data| State["React State"]
+        State -->|JSON Request| API_Client["Axios/Fetch"]
     end
     
     subgraph Backend_API
-        API_Client -->|POST /api/analyze| Flask[Flask Server]
-        Flask -->|Extract Features| Preprocessor[Data Preprocessor]
+        API_Client -->|POST /api/analyze| Flask["Flask Server"]
+        Flask -->|Extract Features| Preprocessor["Data Preprocessor"]
     end
     
     subgraph AI_Engine
-        Preprocessor -->|Feature Vector| Model[ML Model (Pickle)]
-        Model -->|Predict Probability| Probability[Risk Score]
-        Model -->|Explain Prediction| SHAP[SHAP Explainer]
+        Preprocessor -->|Feature Vector| Model["ML Model (Pickle)"]
+        Model -->|Predict Probability| Probability["Risk Score"]
+        Model -->|Explain Prediction| SHAP["SHAP Explainer"]
     end
     
     Probability -->|Result| Flask
     SHAP -->|Top Factors| Flask
+    Flask -->|JSON Response| UI
     Flask -->|JSON Response| UI
 ```
 
