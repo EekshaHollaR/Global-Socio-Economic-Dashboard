@@ -70,7 +70,16 @@ export async function fetchCrisisNews(
             throw new Error(`Failed to fetch news: ${response.status}`);
         }
 
-        const data: NewsResponse = await response.json();
+        const raw = await response.json();
+        const data: NewsResponse = {
+            status: raw?.status ?? 'error',
+            country: raw?.country ?? country,
+            crisisType,
+            totalResults: typeof raw?.totalResults === 'number' ? raw.totalResults : (Array.isArray(raw?.articles) ? raw.articles.length : 0),
+            articles: Array.isArray(raw?.articles) ? raw.articles : [],
+            fetchedAt: raw?.fetchedAt ?? new Date().toISOString(),
+            message: raw?.message
+        };
         console.log(`✅ Fetched ${data.articles.length} articles for ${country}`);
 
         return data;
@@ -124,7 +133,15 @@ export async function fetchLatestNews(
             throw new Error(`Failed to fetch latest news: ${response.status}`);
         }
 
-        const data: NewsResponse = await response.json();
+        const raw = await response.json();
+        const data: NewsResponse = {
+            status: raw?.status ?? 'error',
+            crisisType: crisisType ?? raw?.crisisType ?? 'all',
+            totalResults: typeof raw?.totalResults === 'number' ? raw.totalResults : (Array.isArray(raw?.articles) ? raw.articles.length : 0),
+            articles: Array.isArray(raw?.articles) ? raw.articles : [],
+            fetchedAt: raw?.fetchedAt ?? new Date().toISOString(),
+            message: raw?.message
+        };
         console.log(`✅ Fetched ${data.articles.length} latest articles`);
 
         return data;

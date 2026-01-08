@@ -78,6 +78,7 @@ def health_check():
         'status': 'healthy',
         'service': 'Crisis Analysis API (Pickle-Based Models)',
         'models': 'loaded',
+        'news': 'loaded' if NEWS_API_AVAILABLE else 'missing',
         'cors_enabled': True
     }), 200
 
@@ -174,10 +175,13 @@ def analyze_food():
 # =====================================================================
 # News API Endpoints
 # =====================================================================
+NEWS_API_AVAILABLE = False
 try:
     from newsAPI import fetch_crisis_news, fetch_latest_crisis_news
+    NEWS_API_AVAILABLE = True
     print("✅ Successfully imported news API functions")
 except ImportError as e:
+    NEWS_API_AVAILABLE = False
     print(f"⚠️ News API not available: {e}")
     # Define fallback functions to prevent NameError
     def fetch_crisis_news(*args, **kwargs):
