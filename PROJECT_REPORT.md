@@ -225,7 +225,7 @@ The frontend application was tested for basic rendering stability and routing in
 | Test Suite | Test Case | Duration | Result |
 | :--- | :--- | :--- | :--- |
 | **System Health Check** | Application renders without crashing | 430ms | ✅ **PASS** |
-| **System Health Check** | Contains main router outlet | 83ms | ✅ **PASS** |
+| **System Health Check** | Cntains main router outlet | 83ms | ✅ **PASS** |
 
 > **Summary**: All 2 frontend system checks passed successfully, confirming the application core loads correctly.
 
