@@ -20,16 +20,35 @@ except ImportError as e:
 app = Flask(__name__)
 
 # Enable CORS
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
+
+# Get origins from environment variable or use defaults
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "").split(",")
+# Filter out empty strings
+allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+
+# Default origins for development
+default_origins = [
+    "http://localhost:8081",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8082",
+    "http://localhost:8082",
+]
+
+# Combine origins
+final_origins = allowed_origins + default_origins
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": [
-            "http://localhost:8081",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://127.0.0.1:8081",
-            "http://127.0.0.1:5173",
-            "http://127.0.0.1:3000"
-        ],
+        "origins": final_origins,
         "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -269,9 +288,15 @@ if __name__ == '__main__':
 """
     )
 
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 3001))
+    debug = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+
+    print(f"🚀 Starting server on {host}:{port} (debug={debug})")
+
     app.run(
-        host='0.0.0.0',
-        port=3001,
-        debug=True,
-        use_reloader=False
+        host=host,
+        port=port,
+        debug=debug,
+        use_reloader=False if not debug else True
     )
