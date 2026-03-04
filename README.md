@@ -176,15 +176,61 @@ Note: The news module may fall back to demo data when RSS fetch fails; check `/h
 
 - `Diagrams.md` — full collection of Mermaid diagrams (use case, activity flow, class diagram, component architecture, ER diagram)
 - `PROJECT_REPORT.md` and `Reports/PROJECT_REPORT.md` — detailed project reports and results
-- `Reports/figures/` — visual assets referenced in the report
 
 ### Diagrams Gallery 🖼️
 
-Below are the main architecture diagrams (SVGs located in `Reports/figures`). If your platform does not render SVGs, open the files directly or view `Diagrams.md` for the raw Mermaid definitions.
+Below are the main architecture diagrams. For more, open the files directly or view `Diagrams.md` for the raw Mermaid definitions.
 
-**Architecture Overview**
+**Workflow Overview**
 
-![Architecture Diagram](Reports/figures/architecture.svg "Architecture Overview")
+```mermaid
+graph TD
+    User((User))
+    
+    subgraph Frontend [Frontend Application]
+        UI[React UI Router]
+        Dash[Dashboard Page]
+        Rep[Reports Page]
+        Count[Countries Page]
+        
+        UI --> Dash
+        UI --> Rep
+        UI --> Count
+    end
+    
+    User -->|Interacts| UI
+    
+    subgraph Backend [Backend System]
+        API[Flask API Server]
+        
+        subgraph Core_Modules [Core Modules]
+            CA[Crisis Analyzer]
+            NA[News Aggregator]
+        end
+        
+        subgraph Data_Layer [Data Layer]
+            DB[(Supabase DB)]
+            Local[Local Data / Models]
+        end
+    end
+    
+    UI -->|HTTP Request| API
+    API -->|Invoke| CA
+    API -->|Invoke| NA
+    
+    CA -->|Load| Local
+    CA -->|Predict Risk| Risk[Risk Score]
+    
+    NA -->|Fetch| ExtNews[External News APIs]
+    
+    API -->|Query| DB
+    
+    Risk --> API
+    ExtNews --> NA
+    DB --> API
+    
+    API -->|JSON Response| UI
+```
 
 **Activity Flow**
 
@@ -335,7 +381,26 @@ classDiagram
 
 **Data Flow**
 
-![Data Flow](Reports/figures/dataflow.svg "Data Flow")
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend as React Frontend
+    participant API as Flask API
+    participant Model as ML Service
+    participant Data as Data Layer
+
+    User->>Frontend: Selects Country & Indicators
+    Frontend->>Frontend: Validates Input
+    Frontend->>API: POST /api/analyze/economic (JSON)
+    API->>Model: analyze_economic_crisis(data)
+    Model->>Data: Load Economic Model (Pickle)
+    Data-->>Model: Model Object
+    Model->>Model: Preprocess & Predict Prob.
+    Model->>Model: Calculate SHAP Values
+    Model-->>API: Result {risk: "High", prob: 85%}
+    API-->>Frontend: JSON Response
+    Frontend->>User: Display Risk Score & Charts
+```
 
 **Use Case Diagram**
 
@@ -410,4 +475,5 @@ This project does not include a License file yet. If you want to make this open 
 Thanks to the research team and contributors for data collection and model design.
 
 ---
+
 
