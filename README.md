@@ -70,12 +70,25 @@ Quick architecture (Mermaid):
 
 ```mermaid
 graph TD;
-    User[User] -->|Interacts| UI[Frontend (React + Vite)]
-    UI -->|Requests Data| API[Flask Backend]
-    API -->|Runs| CA[Crisis Analyzer]
-    CA -->|Uses| Models[Pickle Models + SHAP]
-    API -->|Serves| News[News Aggregator]
-    UI -->|Visualizes| Maps[React Simple Maps]
+    subgraph Frontend
+        UI[User Interface] -->|Input Data| State[React State]
+        State -->|JSON Request| API_Client[Axios/Fetch]
+    end
+    
+    subgraph Backend_API
+        API_Client -->|POST /api/analyze| Flask[Flask Server]
+        Flask -->|Extract Features| Preprocessor[Data Preprocessor]
+    end
+    
+    subgraph AI_Engine
+        Preprocessor -->|Feature Vector| Model[ML Model Pickle]
+        Model -->|Predict Probability| Probability[Risk Score]
+        Model -->|Explain Prediction| SHAP[SHAP Explainer]
+    end
+    
+    Probability -->|Result| Flask
+    SHAP -->|Top Factors| Flask
+    Flask -->|JSON Response| UI
 ```
 
 ---
@@ -175,11 +188,150 @@ Below are the main architecture diagrams (SVGs located in `Reports/figures`). If
 
 **Activity Flow**
 
-![Activity Diagram](Reports/figures/activity_diagram.svg "Activity Flow")
+```mermaid
+graph TD
+    A["🟢 Start: Open Dashboard"] --> B["View Global Heat Map"]
+    B --> C{"User Action"}
+    
+    C -->|Select Country| D["Show Country Details"]
+    D --> E{"Choose Analysis Type"}
+    
+    E -->|Economic| F["Enter Economic Indicators<br/>GDP, Inflation, Unemployment,<br/>Domestic Credit, etc."]
+    E -->|Food Security| F2["Enter Food Indicators<br/>Cereal Yield, Food Imports,<br/>Production Index, etc."]
+    E -->|Both| F3["Enter All Indicators"]
+    
+    F --> G["Validate Input Data"]
+    F2 --> G
+    F3 --> G
+    
+    G -->|Invalid| H["Show Error Message"]
+    H --> G
+    
+    G -->|Valid| I["Send HTTP POST to API"]
+    
+    I --> J["Backend: Process Data"]
+    J --> K["Load ML Models"]
+    K --> L["Run Predictions"]
+    L --> M["Calculate SHAP Values"]
+    M --> N["Format JSON Response"]
+    
+    N --> O["Receive Response"]
+    O --> P["Display Risk Gauge"]
+    P --> Q["Show Contributing Factors"]
+    Q --> R["Display Summary Text"]
+    
+    R --> S{"User Next Action"}
+    
+    S -->|Export PDF| T["Generate & Download PDF"]
+    S -->|Export CSV| U["Export Data to CSV"]
+    S -->|View News| V["Show Crisis News Feed"]
+    S -->|Compare| W["Multi-Country Comparison"]
+    S -->|Exit| X["🔴 End Session"]
+    
+    T --> X
+    U --> X
+    V --> X
+    W --> C
+    
+    style A fill:#90ee90
+    style X fill:#ff6b6b
+    style J fill:#87ceeb
+    style P fill:#ffd700
+    style Q fill:#ffd700
+```
 
 **Class Diagram**
 
-![Class Diagram](Reports/figures/class_diagram.svg "Class Diagram")
+```mermaid
+classDiagram
+    class CrisisAnalysisEngine {
+        -economic_model: XGBoostClassifier
+        -food_model: RandomForestClassifier
+        -scalers: Dict[StandardScaler]
+        -shap_explainers: Dict[TreeExplainer]
+        +analyze_economic_crisis(indicators): AnalysisResult
+        +analyze_food_security(indicators): AnalysisResult
+        +calculate_shap_values(features): Dict
+        +classify_risk(probability): String
+        +load_models(path): void
+    }
+    
+    class DataLoader {
+        -economic_data: DataFrame
+        -food_data: DataFrame
+        -cache: Dict
+        -last_updated: datetime
+        +load_economic_data(): DataFrame
+        +load_food_data(): DataFrame
+        +merge_datasets(key): DataFrame
+        +validate_data(): ValidationReport
+        +refresh_cache(ttl): void
+        +get_countries(): List
+    }
+    
+    class DataPreprocessor {
+        -scaler: StandardScaler
+        -imputer: SimpleImputer
+        +normalize(X): ndarray
+        +impute(X): ndarray
+        +handle_outliers(): void
+        +validate(X): boolean
+    }
+    
+    class ShapExplainer {
+        -explainer: TreeExplainer
+        -feature_names: List
+        +explain(prediction): Dict
+        +get_force_plot(): Plot
+        +extract_top_factors(n): List
+        +generate_explanation(): String
+    }
+    
+    class NewsAggregator {
+        -cache: Dict
+        -cache_ttl: int
+        +fetch_news(country, type): List
+        +parse_rss_feed(url): List
+        +cache_results(key, data): void
+        +is_cache_valid(key): boolean
+        +clear_cache(): void
+    }
+    
+    class ReportGenerator {
+        -template_dir: String
+        -output_dir: String
+        +generate_pdf(data): bytes
+        +export_csv(data): bytes
+        +export_excel(data): bytes
+        +create_summary_report(): String
+        +batch_export(countries): List
+    }
+    
+    class AnalysisResult {
+        -country: String
+        -probability: float
+        -classification: String
+        -top_indicators: List
+        -confidence: float
+        -created_at: datetime
+    }
+    
+    class ContributingFactor {
+        -name: String
+        -value: float
+        -shap_value: float
+        -direction: String
+        -impact_percentage: float
+    }
+    
+    CrisisAnalysisEngine --> DataPreprocessor
+    CrisisAnalysisEngine --> ShapExplainer
+    CrisisAnalysisEngine --> AnalysisResult
+    AnalysisResult --> ContributingFactor
+    DataLoader --> DataPreprocessor
+    NewsAggregator --> AnalysisResult
+    ReportGenerator --> AnalysisResult
+```
 
 **Data Flow**
 
@@ -187,7 +339,54 @@ Below are the main architecture diagrams (SVGs located in `Reports/figures`). If
 
 **Use Case Diagram**
 
-![Use Case Diagram](Reports/figures/usecase_diagram.svg "Use Case Diagram")
+```mermaid
+graph LR
+    subgraph Dashboard["Dashboard/Frontend"]
+        USER["👤 User"]
+    end
+
+    subgraph Analysis["Analysis Use Cases"]
+        GlobalMap["🗺️ View Global Heat Map"]
+        EconAnalysis["📊 Analyze Economic Crisis"]
+        FoodAnalysis["🍚 Analyze Food Security"]
+        ViewFactors["🔍 View SHAP Factors"]
+    end
+
+    subgraph Reporting["Reporting & Export"]
+        PDF["📄 Generate PDF Report"]
+        CSV["📊 Export CSV Data"]
+        Excel["📈 Export Excel Data"]
+        Share["🔗 Share Results"]
+    end
+
+    subgraph Admin["Admin/Developer"]
+        API["🔌 Access REST API"]
+        Monitor["📡 Monitor System"]
+        UpdateModels["🤖 Update ML Models"]
+    end
+
+    USER --> GlobalMap
+    USER --> EconAnalysis
+    USER --> FoodAnalysis
+    USER --> ViewFactors
+    USER --> PDF
+    USER --> CSV
+    USER --> Excel
+    USER --> Share
+    USER --> API
+
+    API --> UpdateModels
+    UpdateModels --> Monitor
+
+    style USER fill:#bbdefb
+    style GlobalMap fill:#c8e6c9
+    style EconAnalysis fill:#c8e6c9
+    style FoodAnalysis fill:#c8e6c9
+    style ViewFactors fill:#ffe0b2
+    style PDF fill:#f8bbd0
+    style CSV fill:#f8bbd0
+    style API fill:#d1c4e9
+```
 
 ---
 
@@ -211,3 +410,4 @@ This project does not include a License file yet. If you want to make this open 
 Thanks to the research team and contributors for data collection and model design.
 
 ---
+
